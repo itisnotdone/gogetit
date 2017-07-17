@@ -1,0 +1,10 @@
+vcpu: 1
+memory: 1
+disk:
+ root:
+  pool: ssd
+  capacity: 4
+nic:
+ -
+   network: br-one
+   portgroup: all

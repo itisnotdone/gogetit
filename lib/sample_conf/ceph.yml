@@ -1,0 +1,17 @@
+vcpu: 4
+memory: 8
+disk:
+ root:
+  pool: ssd
+  capacity: 4
+ data:
+  -
+    pool: hdd
+    capacity: 8
+  -
+    pool: hdd
+    capacity: 8
+nic:
+ -
+   network: br-one
+   portgroup: all

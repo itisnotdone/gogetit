@@ -1,0 +1,13 @@
+etcd:
+  url: http://etcd.example.com:2379
+maas:
+  key: K:E:Y
+  url: http://maas.example.com/MAAS/api/2.0
+lxd:
+  url: https://lxd.example.com:8443
+  name: REMOTE_NAME
+  default_alias: ubuntu-16.04
+  profiles:
+  - my_favorite_bridge
+libvirt:
+  url: qemu+ssh://WHOAMI@kvm.example.com/system

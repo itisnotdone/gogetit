@@ -1,0 +1,4 @@
+<interface type='network'>
+  <source network='network_name' portgroup='group_name'/>
+  <model type='virtio'/>
+</interface>

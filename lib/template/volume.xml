@@ -1,0 +1,11 @@
+<volume type='file'>
+  <name>volume_name.qcow2</name>
+  <source>
+  </source>
+  <capacity unit='GiB'>capacity</capacity>
+  <allocation unit='GiB'>0</allocation>
+  <target>
+    <path>/path/to/volume_name.qcow2</path>
+    <format type='qcow2'/>
+  </target>
+</volume>
