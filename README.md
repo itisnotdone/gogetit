@@ -5,7 +5,9 @@ Libraries with a CLI tool for dealing with things like MAAS, LXD and Libvirt.
 ## Installation
 
 ```Install required packages
-sudo apt install build-essential libvirt-dev lxd-client
+sudo apt install -y build-essential libvirt-dev lxd-client
+sudo apt install -y lxd-client libvirt-bin
+
 ```
 
 $ gem install gogetit

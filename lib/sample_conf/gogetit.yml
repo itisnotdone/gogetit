@@ -17,5 +17,6 @@ libvirt:
 # i.e) lxc remote add lxd lxd.example.com --accept-certificate
 #
 # To make sure libvirt connection via ssh available
+# ssh-keygen -t rsa
 # ssh-copy-id WHOAMI@kvm.example.com
 # i.e) ssh-copy-id ubuntu@kvm.example.com
