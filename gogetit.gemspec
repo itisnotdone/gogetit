@@ -39,5 +39,5 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency 'ruby-libvirt', '~> 0.7.0'
   spec.add_runtime_dependency 'oga', '~> 2.10'
   spec.add_runtime_dependency 'net-ssh', '~> 4.1.0'
-  spec.add_runtime_dependency 'thor', '~> 0.19.4'
+  spec.add_runtime_dependency 'thor', '~> 0.19.0'
 end
