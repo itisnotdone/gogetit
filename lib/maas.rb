@@ -1,5 +1,4 @@
 require 'maas/client'
-require 'pry'
 
 module Gogetit
   class GogetMAAS

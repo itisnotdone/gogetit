@@ -7,7 +7,6 @@ require 'providers/libvirt'
 require 'yaml'
 require 'logger'
 require 'util'
-require 'pry'
 
 module Gogetit
   extend Gogetit::Util

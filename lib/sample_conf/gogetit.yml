@@ -11,3 +11,11 @@ lxd:
   - my_favorite_bridge
 libvirt:
   url: qemu+ssh://WHOAMI@kvm.example.com/system
+
+# To configure LXD remote
+# lxc remote add host_name host_fqdn --accept-certificate
+# i.e) lxc remote add lxd lxd.example.com --accept-certificate
+#
+# To make sure libvirt connection via ssh available
+# ssh-copy-id WHOAMI@kvm.example.com
+# i.e) ssh-copy-id ubuntu@kvm.example.com

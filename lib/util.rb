@@ -1,4 +1,3 @@
-require 'pry'
 require 'net/ssh'
 require 'active_support/core_ext/hash'
 

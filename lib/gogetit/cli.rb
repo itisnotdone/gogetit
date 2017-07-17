@@ -1,5 +1,4 @@
 require 'thor'
-require 'pry'
 require 'gogetit'
 
 module Gogetit
