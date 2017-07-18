@@ -4,35 +4,38 @@ Libraries with a CLI tool for dealing with things like MAAS, LXD and Libvirt.
 
 ## Installation
 
-```Install required packages
+### dependent packages
+```bash
 sudo apt install -y build-essential libvirt-dev lxd-client
 sudo apt install -y lxd-client libvirt-bin
-
 ```
 
+### install
+```bash
 $ gem install gogetit
-
-# or
-
 $ gem install gogetit --no-ri --no-rdoc
+```
+## Usage
+```bash
+gogetit list
+gogetit create lxd lxd01
+gogetit create libvirt kvm01
+gogetit destroy lxd01
+```
 
 ```ruby
-gem 'gogetit'
+require 'gogetit'
 ```
 
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
-    $ gem install gogetit
-
-## Usage
-
-TODO: Write usage instructions here
+## TODO
+- Add allocating static IP
 
 ## Development and Contributing
+Clone and then execute followings:
+
+    $ cd gogetit
+    $ gem install bundle
+    $ bundle
 
 Questions and pull requests are always welcome!
 
