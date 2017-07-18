@@ -46,12 +46,12 @@ module Gogetit
         logger.info("Calling <#{__method__.to_s}> for ping to be ready..")
         sleep 3
       end
-        logger.info("#{fqdn} is now available to ping..")
+      logger.info("#{fqdn} is now available to ping..")
       until ssh_available?(fqdn, 'ubuntu')
         logger.info("Calling <#{__method__.to_s}> for ssh to be ready..")
         sleep 3
       end
-        logger.info("#{fqdn} is now available to ssh..")
+      logger.info("#{fqdn} is now available to ssh..")
     end
 
     def create(name, args = {})
@@ -67,8 +67,6 @@ module Gogetit
       conn.start_container(name, :sync=>"true")
 
       fqdn = name + '.' + maas.get_domain
-      wait_until_available(fqdn)
-      upgrade_package(fqdn, 'ubuntu')
       wait_until_available(fqdn)
       logger.info("#{name} has been created.")
       true

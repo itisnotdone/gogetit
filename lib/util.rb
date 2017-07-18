@@ -40,19 +40,6 @@ module Gogetit
 		  end
 		end
 
-    def upgrade_package(fqdn, user)
-      logger.info("Calling <#{__method__.to_s}>..")
-      Net::SSH.start(fqdn, user) do |ssh|
-        begin
-          puts ssh.exec!("sudo apt update")
-          puts ssh.exec!("sudo apt full-upgrade -y")
-          ssh.exec!("sudo reboot")
-        rescue Exception => e
-          puts e
-        end
-      end
-    end
-
     def ping_available?(fqdn)
       `ping -c 1 -W 1 #{fqdn}`
       $?.exitstatus == 0
