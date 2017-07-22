@@ -53,6 +53,7 @@ module Gogetit
         default_param = { 'op' => op }
         conn.request(:post, ['ipaddresses'], default_param.merge!(params))
       when 'release'
+        # Gogetit.maas.ipaddresses('release', {'ip' => '10.1.2.8'})
         # sample = {
         #   'ip' => '10.1.2.8',
         #   'hostname' => 'hostname',

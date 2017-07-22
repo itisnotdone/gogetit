@@ -24,6 +24,8 @@ module Gogetit
       else
         puts 'Invalid argument entered'
       end
+      Gogetit.config[:default][:user] ||= ENV['USER']
+      puts "ssh #{Gogetit.config[:default][:user]}@#{name}"
     end
 
     desc 'destroy NAME', 'Destroy either a container or KVM domain.'

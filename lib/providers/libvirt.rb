@@ -45,8 +45,10 @@ module Gogetit
     # subject.create(name: 'test01')
     def create(name, conf_file = nil)
       logger.info("Calling <#{__method__.to_s}>")
-      return "Domain #{name} already exists! Please check both on MAAS and libvirt."\
-        unless not maas.domain_name_exists?(name) and not domain_exists?(name)
+      if maas.domain_name_exists?(name) or domain_exists?(name)
+        puts "Domain #{name} already exists! Please check both on MAAS and libvirt."
+        return false
+      end
 
       conf_file ||= config[:default_provider_conf_file]
       domain = symbolize_keys(YAML.load_file(conf_file))
@@ -102,7 +104,7 @@ module Gogetit
 
     def define_domain(domain)
       logger.info("Calling <#{__method__.to_s}>")
-      template = File.read(config[:gogetit_lib_dir] + '/template/domain.xml')
+      template = File.read(config[:lib_dir] + '/template/domain.xml')
       doc = Oga.parse_xml(template)
 
       name = domain[:name]
@@ -153,9 +155,9 @@ module Gogetit
 
     def define_volumes(document, domain)
       logger.info("Calling <#{__method__.to_s}>")
-      disk_template = File.read(config[:gogetit_lib_dir] + '/template/disk.xml')
+      disk_template = File.read(config[:lib_dir] + '/template/disk.xml')
       disk_doc = Oga.parse_xml(disk_template)
-      volume_template = File.read(config[:gogetit_lib_dir] + '/template/volume.xml')
+      volume_template = File.read(config[:lib_dir] + '/template/volume.xml')
       volume_doc = Oga.parse_xml(volume_template)
 
       defined_volumes = []
@@ -209,7 +211,7 @@ module Gogetit
 
     def add_nic(document, nic_conf)
       logger.info("Calling <#{__method__.to_s}>")
-      template = File.read(config[:gogetit_lib_dir] + "/template/nic.xml")
+      template = File.read(config[:lib_dir] + "/template/nic.xml")
       doc = Oga.parse_xml(template)
 
       nic_conf.each do |nic|

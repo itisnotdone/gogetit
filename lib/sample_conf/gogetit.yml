@@ -1,3 +1,5 @@
+default:
+  user: ubuntu
 etcd:
   url: http://etcd.example.com:2379
 maas:

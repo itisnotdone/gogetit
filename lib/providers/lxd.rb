@@ -57,7 +57,8 @@ module Gogetit
     def create(name, args = {})
       logger.info("Calling <#{__method__.to_s}>")
       if container_exists?(name) or maas.domain_name_exists?(name)
-        return "Container #{name} already exists!"
+        puts "Container #{name} already exists!"
+        return false
       end
 
       args[:alias] ||= config[:lxd][:default_alias]

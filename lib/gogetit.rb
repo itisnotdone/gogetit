@@ -53,13 +53,13 @@ module Gogetit
   # logger.datetime_format = "%Y-%m-%d %H:%M:%S"
   logger.progname = 'GoGetIt'
 
-  gogetit_lib_dir = File.dirname(__FILE__)
+  lib_dir = File.dirname(__FILE__)
 
-  config[:gogetit_lib_dir] = gogetit_lib_dir
+  config[:lib_dir] = lib_dir
   logger.debug('Loading GoGetIt default configuration..')
   conf_file = user_gogetit_home + '/gogetit.yml'
   if not File.exists?(conf_file)
-    src = File.new(gogetit_lib_dir + '/sample_conf/gogetit.yml')
+    src = File.new(lib_dir + '/sample_conf/gogetit.yml')
     dst = Dir.new(user_gogetit_home)
     logger.debug('Copying GoGetIt default configuration..')
     FileUtils.cp(src, dst)
@@ -77,7 +77,7 @@ module Gogetit
       logger.debug('Creating provider configuration directory..')
       FileUtils.mkdir(provider_conf_dir)
     end
-    src = File.new(gogetit_lib_dir + '/sample_conf/default.yml')
+    src = File.new(lib_dir + '/sample_conf/default.yml')
     dst = Dir.new(provider_conf_dir)
     logger.debug('Copying provider configuration file..')
     FileUtils.cp(src, dst)
