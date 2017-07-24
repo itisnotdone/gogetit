@@ -6,8 +6,8 @@ Libraries with a CLI tool for dealing with things like MAAS, LXD and Libvirt.
 
 ### dependent packages
 ```bash
-sudo apt install -y build-essential libvirt-dev lxd-client libvirt-bin
-sudo reboot
+sudo apt install -y build-essential lxd-client libvirt-dev libvirt-bin
+# logout and in
 
 # to remove default network(virbr0)
 virsh net-destroy default
