@@ -40,5 +40,11 @@ module Gogetit
         end
       end
     end
+
+    desc 'rebuild NAME', 'Destroy and create either a container or KVM domain again.'
+    def rebuild(type=nil, name)
+      invoke :destroy, [name]
+      invoke :create, [type, name]
+    end
   end
 end
