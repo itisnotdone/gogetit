@@ -1,7 +1,7 @@
 # Gogetit
 
 Libraries with a CLI tool for dealing with things which I am working on such as MAAS, LXD, Libvirt and Chef.
-Using this, you will get to used them all together in very efficient and nice way.
+Using this, you will get to use them all together in automated and efficient way.
 
 ## Installation
 
@@ -13,6 +13,8 @@ sudo apt install -y build-essential lxd-client libvirt-dev libvirt-bin
 # to remove default network(virbr0)
 virsh net-destroy default
 virsh net-undefine default
+
+# chefdk environment
 ```
 
 ### install
