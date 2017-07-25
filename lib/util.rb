@@ -1,8 +1,36 @@
+require 'mkmf'
 require 'net/ssh'
 require 'active_support/core_ext/hash'
 
 module Gogetit
   module Util
+    def knife_bootstrap(name, type, config)
+      if find_executable 'knife'
+        if system('knife ssl check')
+          install_cmd = "curl \
+          -l #{config[:chef][:bootstrap][:install_script][type.to_sym]} \
+          | sudo bash -s --"
+          knife_cmd = "knife bootstrap -y #{name} \
+          --node-name #{name} \
+          --ssh-user ubuntu \
+          --sudo \
+          --bootstrap-install-command \"#{install_cmd}\""
+          system(knife_cmd)
+        end
+      end
+    end
+
+    def knife_remove(name)
+      if find_executable 'knife'
+        if system('knife ssl check')
+          puts "Deleting node #{name}.."
+          system("knife node delete -y #{name}")
+          puts "Deleting client #{name}.."
+          system("knife client delete -y #{name}")
+        end
+      end
+    end
+
     def recognize_env
       thedir = 'lib/env'
       gateway = get_gateway(4)

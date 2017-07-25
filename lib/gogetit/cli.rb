@@ -1,8 +1,10 @@
 require 'thor'
 require 'gogetit'
+require 'util'
 
 module Gogetit
   class CLI < Thor
+    include Gogetit::Util
     package_name 'Gogetit'
 
     desc 'list', 'List containers and instances, running currently.'
@@ -15,15 +17,17 @@ module Gogetit
     end
 
     desc 'create (TYPE) NAME', 'Create either a container or KVM domain.'
-    def create(type=nil, name)
+    def create(type='lxd', name)
       case type
-      when 'lxd', nil
+      when 'lxd'
         Gogetit.lxd.create(name)
       when 'libvirt'
         Gogetit.libvirt.create(name)
       else
-        puts 'Invalid argument entered'
+        abort('Invalid argument entered.')
       end
+      # post-tasks
+      knife_bootstrap(name, type, Gogetit.config)
       Gogetit.config[:default][:user] ||= ENV['USER']
       puts "ssh #{Gogetit.config[:default][:user]}@#{name}"
     end
@@ -33,12 +37,16 @@ module Gogetit
       type = Gogetit.get_provider_of(name)
       if type
         case type
-        when 'lxd', nil
+        when 'lxd'
           Gogetit.lxd.destroy(name)
         when 'libvirt'
           Gogetit.libvirt.destroy(name)
+        else
+          abort('Invalid argument entered.')
         end
       end
+      # post-tasks
+      knife_remove(name)
     end
 
     desc 'rebuild NAME', 'Destroy and create either a container or KVM domain again.'

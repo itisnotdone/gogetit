@@ -13,6 +13,11 @@ lxd:
   - my_favorite_bridge
 libvirt:
   url: qemu+ssh://WHOAMI@kvm.example.com/system
+chef:
+  bootstrap:
+    install_script: 
+      libvirt: http://chef.example.com/install_chef_script.sh
+      lxd: http://chef.example.com/install_chef_script_for_lxd.sh
 
 # To configure LXD remote
 # lxc remote add host_name host_fqdn --accept-certificate
