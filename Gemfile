@@ -5,3 +5,5 @@ gemspec
 
 #gem 'etcd-rb', :path => '../etcd-rb'
 #gem 'maas-client', :path => '../maas-client'
+
+gem 'faraday', '~> 0.9.0'
