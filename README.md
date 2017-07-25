@@ -1,6 +1,7 @@
 # Gogetit
 
-Libraries with a CLI tool for dealing with things like MAAS, LXD and Libvirt.
+Libraries with a CLI tool for dealing with things which I am working on such as MAAS, LXD, Libvirt and Chef.
+Using this, you will get to used them all together in very efficient and nice way.
 
 ## Installation
 
@@ -32,7 +33,8 @@ require 'gogetit'
 ```
 
 ## TODO
-- Add allocating static IP
+- Network subnets and space aware via MAAS
+- Static IP allocation
 
 ## Development and Contributing
 Clone and then execute followings:
