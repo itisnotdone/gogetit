@@ -26,6 +26,7 @@ gogetit list
 gogetit create lxd lxd01
 gogetit create libvirt kvm01
 gogetit destroy lxd01
+gogetit rebuild kvm01
 ```
 
 ```ruby
