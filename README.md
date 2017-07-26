@@ -27,8 +27,15 @@ $ gem install gogetit --no-ri --no-rdoc
 gogetit list
 gogetit create lxd lxd01
 gogetit create libvirt kvm01
+
 gogetit destroy lxd01
 gogetit rebuild kvm01
+
+# to create a container bootstrapping as a chef node
+gogetit create --chef chef01
+
+# to destroy a container deleting corresponding chef node and client
+gogetit destroy --chef chef01
 ```
 
 ```ruby
