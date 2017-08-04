@@ -1,11 +1,11 @@
 require 'hyperkit'
-require 'util'
+require 'gogetit/util'
 
 module Gogetit
   class GogetLXD
     include Gogetit::Util
 
-    attr_reader :config, :conn, :maas, :logger
+    attr_reader :config, :logger, :conn, :maas
 
     def initialize(conf, maas, logger)
       @config = conf

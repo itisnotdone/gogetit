@@ -15,6 +15,8 @@ module Gogetit
           --ssh-user ubuntu \
           --sudo \
           --bootstrap-install-command \"#{install_cmd}\""
+          puts 'Bootstrapping..'
+          puts knife_cmd
           system(knife_cmd)
         end
       end

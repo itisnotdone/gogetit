@@ -1,7 +1,6 @@
 require 'spec_helper'
-require 'pry'
 require 'gogetit'
-require 'gogetversion'
+require 'gogetit/version'
 
 RSpec.describe Gogetit do
 
@@ -18,7 +17,7 @@ RSpec.describe Gogetit do
     end
 
     it 'does not create if already exists' do
-      expect(Gogetit.lxd.create(name)).to include('already', 'exists')
+      expect(Gogetit.lxd.create(name)).to be false
     end
 
     it 'can delete a lxc container' do
@@ -35,7 +34,7 @@ RSpec.describe Gogetit do
     end
 
     it 'does not create if already exists' do
-      expect(Gogetit.libvirt.create(name)).to include('already', 'exists')
+      expect(Gogetit.libvirt.create(name)).to be false
     end
 
     it 'can destroy a domain' do

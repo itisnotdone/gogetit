@@ -1,6 +1,6 @@
 # https://gist.github.com/ryanlecompte/1283413
 module Gogetit
-  module Gogetit::ExecutionHooks
+  module ExecutionHooks
     # this method is invoked whenever a new instance method is added to a class
     def method_added(method_name)
       # do nothing if the method that was added was an actual hook method, or

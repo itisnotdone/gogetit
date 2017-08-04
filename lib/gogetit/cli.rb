@@ -1,6 +1,6 @@
 require 'thor'
 require 'gogetit'
-require 'util'
+require 'gogetit/util'
 
 module Gogetit
   class CLI < Thor
@@ -17,6 +17,7 @@ module Gogetit
     end
 
     desc 'create (TYPE) NAME', 'Create either a container or KVM domain.'
+    method_option :chef, :type => :boolean, :desc => "Enable chef awareness."
     def create(type='lxd', name)
       case type
       when 'lxd'
@@ -27,12 +28,13 @@ module Gogetit
         abort('Invalid argument entered.')
       end
       # post-tasks
-      knife_bootstrap(name, type, Gogetit.config)
+      knife_bootstrap(name, type, Gogetit.config) if options[:chef]
       Gogetit.config[:default][:user] ||= ENV['USER']
       puts "ssh #{Gogetit.config[:default][:user]}@#{name}"
     end
 
     desc 'destroy NAME', 'Destroy either a container or KVM domain.'
+    method_option :chef, :type => :boolean, :desc => "Enable chef awareness."
     def destroy(name)
       type = Gogetit.get_provider_of(name)
       if type
@@ -46,7 +48,7 @@ module Gogetit
         end
       end
       # post-tasks
-      knife_remove(name)
+      knife_remove(name) if options[:chef]
     end
 
     desc 'rebuild NAME', 'Destroy and create either a container or KVM domain again.'
