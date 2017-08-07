@@ -1,7 +1,13 @@
 # Gogetit
 
-Libraries with a CLI tool for dealing with things which I am working on such as MAAS, LXD, Libvirt and Chef.
+Libraries with a CLI tool for dealing with things which I am working on such as [MAAS](https://docs.ubuntu.com/maas/2.2/en/), [LXD](https://github.com/lxc/lxd/tree/master/doc), Libvirt and Chef.
 Using this, you will get to use them all together in automated and efficient way.
+
+## Features
+- Provides an API and a CLI tool for dealing with Libvirt(KVM) and LXD.
+- Aware of [MAAS](https://github.com/itisnotdone/maas-client) and works with it to manage IP and FQDN allocation.
+- Aware of Chef knife and its sub commands such as Vault to automate routine tasks.
+- Can be used as a [kitchen driver](https://github.com/itisnotdone/kitchen-gogetkitchen) for Chef Kitchen.
 
 ## Installation
 
