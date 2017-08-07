@@ -7,7 +7,7 @@ By using this, you will get to use them all together in automated and efficient 
 - Provides an API and a CLI tool for dealing with Libvirt(KVM) and LXD.
 - Aware of MAAS and works with [maas-client](https://github.com/itisnotdone/maas-client) to manage IP and FQDN allocation.
 - Aware of Chef knife and its sub commands such as Vault to automate routine tasks.
-- Being used by [kitchen-gogetkitchen](https://github.com/itisnotdone/kitchen-gogetkitchen) as a kitchen driver for Chef Test Kitchen.
+- Being used by [kitchen-gogetkitchen](https://github.com/itisnotdone/kitchen-gogetkitchen) as a driver for Chef Test Kitchen.
 
 ## Installation
 
