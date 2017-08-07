@@ -63,6 +63,9 @@ module Gogetit
       logger.info("Calling to deploy...")
       maas.conn.request(:post, ['machines', system_id], {'op' => 'deploy'})
       maas.wait_until_state(system_id, 'Deployed')
+
+      fqdn = name + '.' + maas.get_domain
+      wait_until_available(fqdn, logger)
       logger.info("#{domain[:name]} has been created.")
       true
     end

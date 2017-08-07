@@ -35,7 +35,7 @@ Gem::Specification.new do |spec|
   #spec.add_runtime_dependency 'etcd-rb', '~> 1.1.0'
   spec.add_runtime_dependency 'json', '~> 2.1.0'
   spec.add_runtime_dependency 'hyperkit', '~> 1.1.0'
-  spec.add_runtime_dependency 'maas-client', '~> 0.1.24'
+  spec.add_runtime_dependency 'maas-client', '~> 0.2.0'
   spec.add_runtime_dependency 'ruby-libvirt', '~> 0.7.0'
   spec.add_runtime_dependency 'oga', '~> 2.10'
   spec.add_runtime_dependency 'net-ssh', '~> 4.1.0'

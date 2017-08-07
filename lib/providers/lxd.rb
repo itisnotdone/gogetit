@@ -41,19 +41,6 @@ module Gogetit
       end
     end
 
-    def wait_until_available(fqdn)
-      until ping_available?(fqdn)
-        logger.info("Calling <#{__method__.to_s}> for ping to be ready..")
-        sleep 3
-      end
-      logger.info("#{fqdn} is now available to ping..")
-      until ssh_available?(fqdn, 'ubuntu')
-        logger.info("Calling <#{__method__.to_s}> for ssh to be ready..")
-        sleep 3
-      end
-      logger.info("#{fqdn} is now available to ssh..")
-    end
-
     def create(name, args = {})
       logger.info("Calling <#{__method__.to_s}>")
       if container_exists?(name) or maas.domain_name_exists?(name)
@@ -68,7 +55,7 @@ module Gogetit
       conn.start_container(name, :sync=>"true")
 
       fqdn = name + '.' + maas.get_domain
-      wait_until_available(fqdn)
+      wait_until_available(fqdn, logger)
       logger.info("#{name} has been created.")
       true
     end
