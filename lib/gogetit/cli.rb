@@ -28,7 +28,10 @@ module Gogetit
         abort('Invalid argument entered.')
       end
       # post-tasks
-      knife_bootstrap(name, type, Gogetit.config) if options[:chef]
+      if options[:chef]
+        knife_bootstrap(name, type, Gogetit.config)
+        update_vault(Gogetit.config)
+      end
       Gogetit.config[:default][:user] ||= ENV['USER']
       puts "ssh #{Gogetit.config[:default][:user]}@#{name}"
     end
@@ -48,7 +51,10 @@ module Gogetit
         end
       end
       # post-tasks
-      knife_remove(name) if options[:chef]
+      if options[:chef]
+        knife_remove(name) if options[:chef]
+        update_vault(Gogetit.config)
+      end
     end
 
     desc 'rebuild NAME', 'Destroy and create either a container or KVM domain again.'

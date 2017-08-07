@@ -14,11 +14,31 @@ module Gogetit
           --node-name #{name} \
           --ssh-user ubuntu \
           --sudo \
-          --bootstrap-install-command \"#{install_cmd}\""
+          --bootstrap-install-command \"#{install_cmd}\"".gsub(/ * /, ' ')
           puts 'Bootstrapping..'
           puts knife_cmd
           system(knife_cmd)
         end
+      end
+    end
+
+    def update_vault(config)
+      # It assumes the data_bags directory is under the root directory of Chef Repo
+      data_bags_dir = "#{config[:chef][:chef_repo_root]}/data_bags"
+      (Dir.entries("#{data_bags_dir}") - ['.', '..']).each do |bag|
+        (Dir.entries("#{data_bags_dir}/#{bag}").select do |f|
+            /^((?!keys).)*\.json/.match(f)
+          end
+        ).each do |item|
+          puts 'Refreshing vaults..'
+          refresh_cmd = "knife vault refresh #{bag} #{item.gsub('.json', '')} --clean-unknown-clients"
+          puts refresh_cmd
+          system(refresh_cmd)
+        end
+        puts 'Updating data bags..'
+        update_cmd = "knife data bag from file #{bag} #{data_bags_dir}/#{bag}"
+        puts update_cmd
+        system(update_cmd)
       end
     end
 

@@ -14,6 +14,7 @@ lxd:
 libvirt:
   url: qemu+ssh://WHOAMI@kvm.example.com/system
 chef:
+  chef_repo_root: /SOMEWHERE/CHEF_REPO
   bootstrap:
     install_script: 
       libvirt: http://chef.example.com/install_chef_script.sh
