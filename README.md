@@ -1,7 +1,7 @@
 # Gogetit
 
-Libraries with a CLI tool for dealing with things which I am working on such as [MAAS](https://docs.ubuntu.com/maas/2.2/en/), [LXD](https://github.com/lxc/lxd/tree/master/doc), Libvirt and Chef.
-Using this, you will get to use them all together in automated and efficient way.
+Libraries with a CLI tool for dealing with things such as [MAAS](https://docs.ubuntu.com/maas/2.2/en/), [LXD](https://github.com/lxc/lxd/tree/master/doc), Libvirt and Chef.
+By using this, you will get to use them all together in automated and efficient way.
 
 ## Features
 - Provides an API and a CLI tool for dealing with Libvirt(KVM) and LXD.
