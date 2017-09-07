@@ -91,7 +91,7 @@ module Gogetit
 		end
 
     def wait_until_available(fqdn, logger)
-      until ping_available?(fqdn)
+      until ping_available?(fqdn, logger)
         logger.info("Calling <#{__method__.to_s}> for ping to be ready..")
         sleep 3
       end
@@ -104,8 +104,10 @@ module Gogetit
       logger.info("#{fqdn} is now available to ssh..")
     end
 
-    def ping_available?(fqdn)
-      `ping -c 1 -W 1 #{fqdn}`
+    def ping_available?(host, logger)
+      # host can be both IP and FQDN.
+      logger.info("Calling <#{__method__.to_s}> for #{host}")
+      `ping -c 1 -W 1 #{host}`
       $?.exitstatus == 0
     end
 
@@ -116,5 +118,19 @@ module Gogetit
         puts e
       end
     end
+
+    def check_ip_available(addresses, maas, logger)
+      logger.info("Calling <#{__method__.to_s}>")
+      # to do a ping test
+      addresses.each do |ip|
+        abort("#{ip} is already being used.") if ping_available?(ip, logger)
+      end
+      # to check with MAAS
+      ifaces = maas.ip_reserved?(addresses)
+      abort("one of #{addresses.join(', ')} is already being used.") \
+        unless ifaces
+      return ifaces
+    end
+
   end
 end

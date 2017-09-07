@@ -1,0 +1,17 @@
+config:
+  #   raw.lxc: lxc.aa_profile=unconfined
+  #   security.privileged: "true"
+  user.user-data: |
+    #cloud-config
+    ssh_authorized_keys:
+     - ssh-rsa blahblah someone@somewhere
+    apt_mirror: http://repo.example.com/ubuntu/
+description: ""
+devices:
+  eth0:
+    mtu: "8954"
+    name: eth0
+    nictype: bridged
+    parent: somebr
+    type: nic
+name: somebr

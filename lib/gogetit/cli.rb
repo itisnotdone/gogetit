@@ -17,16 +17,28 @@ module Gogetit
     end
 
     desc 'create (TYPE) NAME', 'Create either a container or KVM domain.'
-    method_option :chef, :type => :boolean, :desc => "Enable chef awareness."
-    def create(type='lxd', name)
-      case type
+    method_option :provider, :aliases => '-p', :type => :string, \
+      :default => 'lxd', :desc => 'A provider such as lxd and libvirt'
+    method_option :chef, :aliases => '-c', :type => :boolean, \
+      :default => false, :desc => 'Chef awareness'
+
+    method_option :vlans, :aliases => '-v', :type => :array, \
+      :desc => 'A list of VLAN IDs to connect to'
+    method_option :ipaddresses, :aliases => '-i', :type => :array, \
+      :desc => 'A list of static IPs to assign'
+    def create(name)
+      abort("vlans and ipaddresses can not be used at the same time.") \
+        if options['vlans'] and options['ipaddresses']
+
+      case options[:provider]
       when 'lxd'
-        Gogetit.lxd.create(name)
+        Gogetit.lxd.create(name, options.to_hash)
       when 'libvirt'
-        Gogetit.libvirt.create(name)
+        Gogetit.libvirt.create(name, options.to_hash)
       else
         abort('Invalid argument entered.')
       end
+
       # post-tasks
       if options[:chef]
         knife_bootstrap(name, type, Gogetit.config)
@@ -34,6 +46,7 @@ module Gogetit
       end
       Gogetit.config[:default][:user] ||= ENV['USER']
       puts "ssh #{Gogetit.config[:default][:user]}@#{name}"
+      print "ssh #{Gogetit.config[:default][:user]}@#{name}"
     end
 
     desc 'destroy NAME', 'Destroy either a container or KVM domain.'

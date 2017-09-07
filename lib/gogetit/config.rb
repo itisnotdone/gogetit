@@ -61,23 +61,5 @@ module Gogetit
       abort('Please define default configuration for GoGetIt at ~/.gogetit/gogetit.yml.')
     end
     config.merge!(symbolize_keys(YAML.load_file(conf_file)))
-
-    logger.debug('Define provider configuration directory..')
-    provider_conf_dir = user_gogetit_home + '/conf'
-    config[:provider_conf_dir] = provider_conf_dir
-    default_provider_conf_file = provider_conf_dir + '/default.yml'
-    config[:default_provider_conf_file] = default_provider_conf_file
-    if not File.exists?(default_provider_conf_file)
-      if not File.directory?(provider_conf_dir)
-        logger.debug('Creating provider configuration directory..')
-        FileUtils.mkdir(provider_conf_dir)
-      end
-      src = File.new(lib_dir + '/sample_conf/default.yml')
-      dst = Dir.new(provider_conf_dir)
-      logger.debug('Copying provider configuration file..')
-      FileUtils.cp(src, dst)
-      abort('Please define default configuration for providers at ~/.gogetit/conf/default.yml.')
-    end
-
   end
 end

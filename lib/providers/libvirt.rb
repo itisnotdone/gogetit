@@ -42,16 +42,70 @@ module Gogetit
         .value
     end
 
+    def generate_nics(ifaces, domain)
+      abort("There is no dns server specified for the gateway network.") \
+        unless ifaces[0]['dns_servers'][0]
+      abort("There is no gateway specified for the gateway network.") \
+        unless ifaces[0]['gateway_ip']
+
+      # It seems the first IP has to belong to the untagged VLAN in the Fabric.
+      abort("The first IP you entered does not belong to the untagged VLAN in the Fabric.") \
+        unless ifaces[0]['vlan']['name'] == 'untagged'
+
+      domain[:ifaces] = ifaces
+      domain[:nic] = []
+
+      ifaces.each_with_index do |iface,index|
+        if index == 0
+          if iface['vlan']['name'] == 'untagged'
+            nic = {
+              network: config[:default][:native_bridge],
+              portgroup: config[:default][:native_bridge]
+            }
+          elsif iface['vlan']['name'] != 'untagged'
+            nic = {
+              network: config[:default][:native_bridge],
+              portgroup: config[:default][:native_bridge] + '-' + iface['vlan']['vid'].to_s
+            }
+          end
+          domain[:nic].push(nic)
+        elsif index > 0
+          # Only if the fisrt interface has untagged VLAN,
+          # it will be configured with VLANs.
+          # This will not be hit as of now and might be deprecated.
+          if ifaces[0]['vlan']['name'] != 'untagged'
+            nic = {
+              network: config[:default][:native_bridge],
+              portgroup: config[:default][:native_bridge] + '-' + iface['vlan']['vid'].to_s
+            }
+            domain[:nic].push(nic)
+          end
+        end
+      end
+      return domain
+    end
+
     # subject.create(name: 'test01')
-    def create(name, conf_file = nil)
+    def create(name, options = nil)
       logger.info("Calling <#{__method__.to_s}>")
-      if maas.domain_name_exists?(name) or domain_exists?(name)
-        puts "Domain #{name} already exists! Please check both on MAAS and libvirt."
-        return false
+      abort("Domain #{name} already exists! Please check both on MAAS and libvirt.") \
+        if maas.domain_name_exists?(name) or domain_exists?(name)
+
+      domain = config[:libvirt][:specs][:default]
+      if options['ipaddresses']
+        ifaces = check_ip_available(options['ipaddresses'], maas, logger)
+        domain = generate_nics(ifaces, domain)
+      elsif options[:vlans]
+        #check_vlan_available(options[:vlans])
+      else
+        domain[:nic] = [
+          {
+            network: config[:default][:native_bridge],
+            portgroup: config[:default][:native_bridge]
+          }
+        ]
       end
 
-      conf_file ||= config[:default_provider_conf_file]
-      domain = symbolize_keys(YAML.load_file(conf_file))
       domain[:name] = name
       domain[:uuid] = SecureRandom.uuid
 
@@ -60,6 +114,65 @@ module Gogetit
 
       system_id = maas.get_system_id(domain[:name])
       maas.wait_until_state(system_id, 'Ready')
+
+      # To configure interfaces
+      if options['ipaddresses']
+
+        # It assumes you only have a physical interfaces.
+        interfaces = maas.interfaces([system_id])
+        maas.interfaces(
+          [system_id, interfaces[0]['id']],
+          {
+            'op' => 'unlink_subnet',
+            'id' => interfaces[0]['links'][0]['id']
+          }
+        )
+
+        maas.interfaces(
+          [system_id, interfaces[0]['id']],
+          {
+            'op' => 'link_subnet',
+            'mode' => 'STATIC',
+            'subnet' => ifaces[0]['id'],
+            'ip_address' => ifaces[0]['ip'],
+            'default_gateway' => 'True',
+            'force' => 'False'
+          }
+        )
+
+        if domain[:ifaces].length > 1
+          ifaces.shift
+
+          # VLAN configuration
+          ifaces.each_with_index do |iface,index|
+            params = {
+              'op' => 'create_vlan',
+              'vlan' => iface['vlan']['id'],
+              'parent' => interfaces[0]['id']
+            }
+            maas.interfaces([system_id], params)
+
+            interfaces = maas.interfaces([system_id])
+            interfaces.shift
+
+            maas.interfaces([system_id, interfaces[index]['id']],
+              {
+                'op' => 'link_subnet',
+                'mode' => 'STATIC',
+                'subnet' => ifaces[index]['id'],
+                'ip_address' => ifaces[index]['ip'],
+                'default_gateway' => 'False',
+                'force' => 'False'
+              }
+            )
+          end
+        end
+
+      elsif options[:vlans]
+        #check_vlan_available(options[:vlans])
+      else
+      end
+
       logger.info("Calling to deploy...")
       maas.conn.request(:post, ['machines', system_id], {'op' => 'deploy'})
       maas.wait_until_state(system_id, 'Deployed')
@@ -123,10 +236,10 @@ module Gogetit
       doc = define_volumes(doc, domain)
       doc = add_nic(doc, domain[:nic])
 
-      #print_xml(doc)
-      #volumes.each do |v|
-      #  print_xml(v)
-      #end
+      # print_xml(doc)
+      # volumes.each do |v|
+      #   print_xml(v)
+      # end
 
       return Oga::XML::Generator.new(doc).to_xml
     end

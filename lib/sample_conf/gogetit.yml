@@ -1,18 +1,45 @@
 default:
   user: ubuntu
-etcd:
-  url: http://etcd.example.com:2379
+  native_bridge: my_favorite_bridge
+# etcd:
+#   url: http://etcd.example.com:2379
+# about MAAS
 maas:
   key: K:E:Y
   url: http://maas.example.com/MAAS/api/2.0
+# about LXD
 lxd:
   url: https://lxd.example.com:8443
   name: REMOTE_NAME
   default_alias: ubuntu-16.04
   profiles:
   - my_favorite_bridge
+# about Libvirt
 libvirt:
   url: qemu+ssh://WHOAMI@kvm.example.com/system
+  specs:
+    default:
+      vcpu: 1
+      memory: 1
+      disk:
+       root:
+        pool: ssd
+        capacity: 4
+    ceph:
+      vcpu: 4
+      memory: 8
+      disk:
+       root:
+        pool: ssd
+        capacity: 4
+       data:
+        -
+          pool: hdd
+          capacity: 8
+        -
+          pool: hdd
+          capacity: 8
+# about Chef
 chef:
   chef_repo_root: /SOMEWHERE/CHEF_REPO
   bootstrap:
