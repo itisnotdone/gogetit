@@ -41,6 +41,11 @@ module Gogetit
       return true if dnsresource_exists?(name) or machine_exists?(name)
     end
 
+    def get_subnets
+      logger.info("Calling <#{__method__.to_s}>")
+      return conn.request(:get, ['subnets'])
+    end
+
     def ip_reserved?(addresses)
       logger.info("Calling <#{__method__.to_s}>")
       ips = Set.new
@@ -209,6 +214,16 @@ module Gogetit
     def change_hostname(system_id, hostname)
       logger.info("Calling <#{__method__.to_s}>")
       conn.request(:put, ['machines', system_id], { 'hostname' => hostname })
+    end
+
+    def get_sshkeys
+      logger.info("Calling <#{__method__.to_s}>")
+      conn.request(:get, ['account', 'prefs', 'sshkeys'])
+    end
+
+    def get_package_repos
+      logger.info("Calling <#{__method__.to_s}>")
+      conn.request(:get, ['package-repositories'])
     end
   end
 end

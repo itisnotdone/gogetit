@@ -120,6 +120,7 @@ module Gogetit
 
         # It assumes you only have a physical interfaces.
         interfaces = maas.interfaces([system_id])
+
         maas.interfaces(
           [system_id, interfaces[0]['id']],
           {
@@ -128,23 +129,21 @@ module Gogetit
           }
         )
 
-        maas.interfaces(
-          [system_id, interfaces[0]['id']],
-          {
-            'op' => 'link_subnet',
-            'mode' => 'STATIC',
-            'subnet' => ifaces[0]['id'],
-            'ip_address' => ifaces[0]['ip'],
-            'default_gateway' => 'True',
-            'force' => 'False'
-          }
-        )
+        # VLAN configuration
+        ifaces.each_with_index do |iface,index|
 
-        if domain[:ifaces].length > 1
-          ifaces.shift
+          if index == 0
+            params = {
+              'op' => 'link_subnet',
+              'mode' => 'STATIC',
+              'subnet' => ifaces[0]['id'],
+              'ip_address' => ifaces[0]['ip'],
+              'default_gateway' => 'True',
+              'force' => 'False'
+            }
+            maas.interfaces([system_id, interfaces[0]['id']], params)
 
-          # VLAN configuration
-          ifaces.each_with_index do |iface,index|
+          elsif index > 0
             params = {
               'op' => 'create_vlan',
               'vlan' => iface['vlan']['id'],
@@ -153,19 +152,19 @@ module Gogetit
             maas.interfaces([system_id], params)
 
             interfaces = maas.interfaces([system_id])
-            interfaces.shift
 
-            maas.interfaces([system_id, interfaces[index]['id']],
-              {
-                'op' => 'link_subnet',
-                'mode' => 'STATIC',
-                'subnet' => ifaces[index]['id'],
-                'ip_address' => ifaces[index]['ip'],
-                'default_gateway' => 'False',
-                'force' => 'False'
-              }
-            )
+            params = {
+              'op' => 'link_subnet',
+              'mode' => 'STATIC',
+              'subnet' => ifaces[index]['id'],
+              'ip_address' => ifaces[index]['ip'],
+              'default_gateway' => 'False',
+              'force' => 'False'
+            }
+
+            maas.interfaces([system_id, interfaces[index]['id']], params)
           end
+
         end
 
       elsif options[:vlans]

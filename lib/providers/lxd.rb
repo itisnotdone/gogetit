@@ -42,8 +42,8 @@ module Gogetit
       end
     end
 
-    def generate_args(options)
-      args = {}
+    def generate_args(args, options)
+      logger.info("Calling <#{__method__.to_s}>")
       args[:devices] = {}
 
       ifaces = check_ip_available(options['ipaddresses'], maas, logger)
@@ -52,16 +52,14 @@ module Gogetit
       abort("There is no gateway specified for the gateway network.") \
         unless ifaces[0]['gateway_ip']
       args[:ifaces] = ifaces
-      args[:config] = {
-        'user.network-config': {
-          'version' => 1,
-          'config' => [
-            {
-              'type' => 'nameserver',
-              'address' => ifaces[0]['dns_servers'][0]
-            }
-          ]
-        }
+      args[:config][:'user.network-config'] = {
+        'version' => 1,
+        'config' => [
+          {
+            'type' => 'nameserver',
+            'address' => ifaces[0]['dns_servers'][0]
+          }
+        ]
       }
 
       ifaces.each_with_index do |iface,index|
@@ -157,18 +155,67 @@ module Gogetit
       return args
     end
 
+    def generate_common_args
+      logger.info("Calling <#{__method__.to_s}>")
+      args = {}
+      sshkeys = maas.get_sshkeys
+      pkg_repos = maas.get_package_repos
+
+      args[:config] = {
+        'user.user-data': { 'ssh_authorized_keys' => [] }
+      }
+
+      sshkeys.each do |key|
+        args[:config][:'user.user-data']['ssh_authorized_keys'].push(key['key'])
+      end
+
+      pkg_repos.each do |repo|
+        if repo['name'] == 'main_archive'
+          args[:config][:'user.user-data']['apt_mirror'] = repo['url']
+        end
+      end
+
+      args[:config][:"user.user-data"] = \
+        YAML.dump(args[:config][:"user.user-data"])[4..-1]
+      return args
+    end
+
     def create(name, options = {})
       logger.info("Calling <#{__method__.to_s}>")
       abort("Container or Hostname #{name} already exists!") \
         if container_exists?(name) or maas.domain_name_exists?(name)
 
-      args = {}
+      args = generate_common_args
+
       if options['ipaddresses']
-        args = generate_args(options)
+        args = generate_args(args, options)
       elsif options[:vlans]
         #check_vlan_available(options[:vlans])
       else
-        args[:profiles] ||= config[:lxd][:profiles]
+        abort("native_bridge #{config[:default][:native_bridge]} does not exist.") \
+           unless conn.networks.include? config[:default][:native_bridge]
+
+        native_bridge_mtu = nil
+        # It assumes you only use one fabric as of now,
+        # since there might be more fabrics with each untagged vlans on them,
+        # which might make finding exact mtu fail as following process.
+        default_fabric = 'fabric-0'
+
+        maas.get_subnets.each do |subnet|
+          if subnet['vlan']['name'] == 'untagged' and subnet['vlan']['fabric'] == default_fabric
+            native_bridge_mtu = subnet['vlan']['mtu']
+            break
+          end
+        end
+
+        args[:devices] = {}
+        args[:devices][:"eth0"] = {
+          mtu: native_bridge_mtu.to_s,   #This must be string
+          name: 'eth0',
+          nictype: 'bridged',
+          parent: config[:default][:native_bridge],
+          type: 'nic'
+        }
       end
 
       args[:alias] ||= config[:lxd][:default_alias]
@@ -177,12 +224,12 @@ module Gogetit
       conn.create_container(name, args)
       container = conn.container(name)
 
-      if options['vlans'] or options['ipaddresses']
-        container.devices = args[:devices].merge!(container.devices.to_hash)
-        conn.update_container(name, container)
-        # Fetch container object again
-        container = conn.container(name)
+      container.devices = args[:devices].merge!(container.devices.to_hash)
+      conn.update_container(name, container)
+      # Fetch container object again
+      container = conn.container(name)
 
+      if options['vlans'] or options['ipaddresses']
         # Generate params to reserve IPs
         args[:ifaces].each_with_index do |iface,index|
           if index == 0
@@ -193,8 +240,10 @@ module Gogetit
               'mac' => container[:expanded_config][:"volatile.eth#{index}.hwaddr"]
             }
           elsif index > 0
-            # if dot, '.', is used as a conjunction instead of '-', it fails ocuring '404 not found'.
-            # if under score, '_', is used as a conjunction instead of '-', it breaks MAAS DNS somehow..
+            # if dot, '.', is used as a conjunction instead of '-',
+            # it fails ocuring '404 not found'.
+            # if under score, '_', is used as a conjunction instead of '-',
+            # it breaks MAAS DNS somehow..
             if args[:ifaces][0]['vlan']['name'] == 'untagged'
               params = {
                 'subnet' => iface['cidr'],

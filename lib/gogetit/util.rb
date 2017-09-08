@@ -4,7 +4,8 @@ require 'active_support/core_ext/hash'
 
 module Gogetit
   module Util
-    def knife_bootstrap(name, type, config)
+    def knife_bootstrap(name, type, config, logger)
+      logger.info("Calling <#{__method__.to_s}>")
       if find_executable 'knife'
         if system('knife ssl check')
           install_cmd = "curl \
@@ -22,7 +23,8 @@ module Gogetit
       end
     end
 
-    def update_vault(config)
+    def update_vault(config, logger)
+      logger.info("Calling <#{__method__.to_s}>")
       # It assumes the data_bags directory is under the root directory of Chef Repo
       data_bags_dir = "#{config[:chef][:chef_repo_root]}/data_bags"
       (Dir.entries("#{data_bags_dir}") - ['.', '..']).each do |bag|
@@ -42,7 +44,8 @@ module Gogetit
       end
     end
 
-    def knife_remove(name)
+    def knife_remove(name, logger)
+      logger.info("Calling <#{__method__.to_s}>")
       if find_executable 'knife'
         if system('knife ssl check')
           puts "Deleting node #{name}.."
@@ -91,6 +94,7 @@ module Gogetit
 		end
 
     def wait_until_available(fqdn, logger)
+      logger.info("Calling <#{__method__.to_s}>")
       until ping_available?(fqdn, logger)
         logger.info("Calling <#{__method__.to_s}> for ping to be ready..")
         sleep 3

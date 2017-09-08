@@ -41,12 +41,11 @@ module Gogetit
 
       # post-tasks
       if options[:chef]
-        knife_bootstrap(name, type, Gogetit.config)
-        update_vault(Gogetit.config)
+        knife_bootstrap(name, type, Gogetit.config, Gogetit.logger)
+        update_vault(Gogetit.config, Gogetit.logger)
       end
       Gogetit.config[:default][:user] ||= ENV['USER']
       puts "ssh #{Gogetit.config[:default][:user]}@#{name}"
-      print "ssh #{Gogetit.config[:default][:user]}@#{name}"
     end
 
     desc 'destroy NAME', 'Destroy either a container or KVM domain.'
@@ -65,8 +64,8 @@ module Gogetit
       end
       # post-tasks
       if options[:chef]
-        knife_remove(name) if options[:chef]
-        update_vault(Gogetit.config)
+        knife_remove(name, Gogetit.logger) if options[:chef]
+        update_vault(Gogetit.config, Gogetit.logger)
       end
     end
 

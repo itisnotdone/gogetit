@@ -90,7 +90,7 @@ Clone and then execute followings:
     $ gem install bundle
     $ bundle
 
-Questions and pull requests are always welcome!
+Questions, pull requests, advices and suggestions are always welcome!
 
 ## License
 
