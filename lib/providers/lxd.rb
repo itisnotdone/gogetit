@@ -175,8 +175,14 @@ module Gogetit
         end
       end
 
+      # To disable to update apt database on first boot
+      # so chef client can keep doing its job.
+      args[:config][:'user.user-data']['package_update'] = false
+
       args[:config][:"user.user-data"] = \
         YAML.dump(args[:config][:"user.user-data"])[4..-1]
+
+      args[:config][:"user.user-data"] = "#cloud-config\n" + args[:config][:"user.user-data"]
       return args
     end
 
