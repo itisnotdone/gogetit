@@ -39,7 +39,7 @@
       <target type='serial' port='0'/>
     </console>
     <input type='keyboard' bus='ps2'/>
-    <graphics type='vnc' port='-1' autoport='yes'/>
+    <graphics type='vnc' port='-1' autoport='yes' listen='0.0.0.0' keymap='en-us'/>
     <video>
       <model type='cirrus' vram='16384' heads='1'/>
     </video>

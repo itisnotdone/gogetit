@@ -82,6 +82,7 @@ require 'gogetit'
 - Provisioning LXD with useful cloud-init user-data.
 - Deploying bare metal machine from machine pool.
 - Static IP auto-assignment with VLAN info.
+- Working with Multiple LXD and Libvirt hosts
 
 ## Development and Contributing
 Clone and then execute followings:

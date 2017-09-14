@@ -178,6 +178,14 @@ module Gogetit
 
       fqdn = name + '.' + maas.get_domain
       wait_until_available(fqdn, logger)
+
+      # To enable serial console to use 'virsh console'
+      commands = [
+        'sudo systemctl enable serial-getty@ttyS0.service',
+        'sudo systemctl start serial-getty@ttyS0.service'
+      ]
+      run_through_ssh(fqdn, commands, logger)
+
       logger.info("#{domain[:name]} has been created.")
       true
     end

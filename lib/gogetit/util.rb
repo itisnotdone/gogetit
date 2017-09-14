@@ -101,7 +101,7 @@ module Gogetit
       end
       logger.info("#{fqdn} is now available to ping..")
 
-      until ssh_available?(fqdn, 'ubuntu')
+      until ssh_available?(fqdn, 'ubuntu', logger)
         logger.info("Calling <#{__method__.to_s}> for ssh to be ready..")
         sleep 3
       end
@@ -115,7 +115,8 @@ module Gogetit
       $?.exitstatus == 0
     end
 
-    def ssh_available?(fqdn, user)
+    def ssh_available?(fqdn, user, logger)
+      logger.info("Calling <#{__method__.to_s}>")
       begin
         Net::SSH.start(fqdn, user).class
       rescue Exception => e
@@ -136,5 +137,15 @@ module Gogetit
       return ifaces
     end
 
+    def run_through_ssh(host, commands, logger)
+      logger.info("Calling <#{__method__.to_s}>")
+      Net::SSH.start(host, 'ubuntu') do |ssh|
+        commands.each do |cmd|
+          logger.info("'#{cmd}' is being executed..")
+          output = ssh.exec!(cmd)
+          puts output if output != ''
+        end
+      end
+    end
   end
 end
