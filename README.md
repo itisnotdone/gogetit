@@ -60,7 +60,9 @@ gogetit create kvm01 -p libvirt -i 192.168.10.10 10.0.0.2
 # gogetit create kvm01 -p bare
 
 gogetit destroy lxd01
-gogetit rebuild kvm01
+
+# This feature is broken and might be deprecated in the future.
+# gogetit rebuild kvm01
 
 # to create a container bootstrapping as a chef node
 gogetit create chef01 --chef

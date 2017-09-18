@@ -16,7 +16,7 @@ module Gogetit
       system("virsh -c #{Gogetit.config[:libvirt][:url]} list --all")
     end
 
-    desc 'create (TYPE) NAME', 'Create either a container or KVM domain.'
+    desc 'create NAME', 'Create either a container or KVM domain.'
     method_option :provider, :aliases => '-p', :type => :string, \
       :default => 'lxd', :desc => 'A provider such as lxd and libvirt'
     method_option :chef, :aliases => '-c', :type => :boolean, \
@@ -41,7 +41,7 @@ module Gogetit
 
       # post-tasks
       if options[:chef]
-        knife_bootstrap(name, type, Gogetit.config, Gogetit.logger)
+        knife_bootstrap(name, options[:provider], Gogetit.config, Gogetit.logger)
         update_vault(Gogetit.config, Gogetit.logger)
       end
       Gogetit.config[:default][:user] ||= ENV['USER']
@@ -51,9 +51,10 @@ module Gogetit
     desc 'destroy NAME', 'Destroy either a container or KVM domain.'
     method_option :chef, :type => :boolean, :desc => "Enable chef awareness."
     def destroy(name)
-      type = Gogetit.get_provider_of(name)
-      if type
-        case type
+      # Let Gogetit recognize the provider.
+      provider = Gogetit.get_provider_of(name)
+      if provider
+        case provider
         when 'lxd'
           Gogetit.lxd.destroy(name)
         when 'libvirt'
@@ -69,10 +70,11 @@ module Gogetit
       end
     end
 
-    desc 'rebuild NAME', 'Destroy and create either a container or KVM domain again.'
-    def rebuild(type=nil, name)
-      invoke :destroy, [name]
-      invoke :create, [type, name]
-    end
+    # This feature is broken and might be deprecated in the future.
+    # desc 'rebuild NAME', 'Destroy and create either a container or KVM domain again.'
+    # def rebuild(type=nil, name)
+    #   invoke :destroy, [name]
+    #   invoke :create, [type, name]
+    # end
   end
 end

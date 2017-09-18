@@ -4,12 +4,12 @@ require 'active_support/core_ext/hash'
 
 module Gogetit
   module Util
-    def knife_bootstrap(name, type, config, logger)
+    def knife_bootstrap(name, provider, config, logger)
       logger.info("Calling <#{__method__.to_s}>")
       if find_executable 'knife'
         if system('knife ssl check')
           install_cmd = "curl \
-          -l #{config[:chef][:bootstrap][:install_script][type.to_sym]} \
+          -l #{config[:chef][:bootstrap][:install_script][provider.to_sym]} \
           | sudo bash -s --"
           knife_cmd = "knife bootstrap -y #{name} \
           --node-name #{name} \
@@ -26,12 +26,16 @@ module Gogetit
     def update_vault(config, logger)
       logger.info("Calling <#{__method__.to_s}>")
       # It assumes the data_bags directory is under the root directory of Chef Repo
+      vaults = `knife vault list`.split
       data_bags_dir = "#{config[:chef][:chef_repo_root]}/data_bags"
       (Dir.entries("#{data_bags_dir}") - ['.', '..']).each do |bag|
-        (Dir.entries("#{data_bags_dir}/#{bag}").select do |f|
-            /^((?!keys).)*\.json/.match(f)
+        (
+          (Dir.entries("#{data_bags_dir}/#{bag}") - ['.', '..']).select do |f|
+            # it will only take the bags created by vault command.
+            /^.*_keys.json/.match(f)
           end
         ).each do |item|
+          item.slice! '_keys'
           puts 'Refreshing vaults..'
           refresh_cmd = "knife vault refresh #{bag} #{item.gsub('.json', '')} --clean-unknown-clients"
           puts refresh_cmd
