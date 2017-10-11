@@ -42,6 +42,7 @@ libvirt:
 # about Chef
 chef:
   chef_repo_root: /SOMEWHERE/CHEF_REPO
+  target_environment: THE_ENV_YOU_ARE_TARGETING
   bootstrap:
     install_script: 
       libvirt: http://chef.example.com/install_chef_script.sh

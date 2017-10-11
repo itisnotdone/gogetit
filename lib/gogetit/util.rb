@@ -1,11 +1,18 @@
 require 'mkmf'
 require 'net/ssh'
 require 'active_support/core_ext/hash'
+require 'json'
 
 module Gogetit
   module Util
+    def run_command(cmd, logger)
+      logger.info("Calling <#{__method__.to_s}> to run #{cmd}")
+      system(cmd)
+    end
+
     def knife_bootstrap(name, provider, config, logger)
       logger.info("Calling <#{__method__.to_s}>")
+      config[:chef][:target_environment] ||= '_default'
       if find_executable 'knife'
         if system('knife ssl check')
           install_cmd = "curl \
@@ -15,6 +22,7 @@ module Gogetit
           --node-name #{name} \
           --ssh-user ubuntu \
           --sudo \
+          --environment #{config[:chef][:target_environment]} \
           --bootstrap-install-command \"#{install_cmd}\"".gsub(/ * /, ' ')
           puts 'Bootstrapping..'
           puts knife_cmd
@@ -23,28 +31,64 @@ module Gogetit
       end
     end
 
-    def update_vault(config, logger)
+    def update_databags(config, logger)
       logger.info("Calling <#{__method__.to_s}>")
-      # It assumes the data_bags directory is under the root directory of Chef Repo
-      vaults = `knife vault list`.split
       data_bags_dir = "#{config[:chef][:chef_repo_root]}/data_bags"
-      (Dir.entries("#{data_bags_dir}") - ['.', '..']).each do |bag|
-        (
-          (Dir.entries("#{data_bags_dir}/#{bag}") - ['.', '..']).select do |f|
-            # it will only take the bags created by vault command.
-            /^.*_keys.json/.match(f)
+
+      puts 'Listing databags..'
+      databags_as_is = `knife data bag list`.split
+      databags_to_be = Dir.entries(data_bags_dir) - ['.', '..']
+
+      puts 'Checking databags to delete..'
+      (databags_as_is - databags_to_be).each do |bag|
+        puts "Deleting databag '#{bag}'.."
+          answer = ask(
+            'Do you really want to delete this?',
+            :echo => true,
+            :limited_to => ['y', 'n']
+          )
+          case answer
+          when 'y'
+            run_command("knife data bag delete -y #{bag}", logger)
+          when 'n'
+            puts 'Keeping..'
           end
-        ).each do |item|
-          item.slice! '_keys'
-          puts 'Refreshing vaults..'
-          refresh_cmd = "knife vault refresh #{bag} #{item.gsub('.json', '')} --clean-unknown-clients"
-          puts refresh_cmd
-          system(refresh_cmd)
+      end
+
+      puts 'Checking databags to create..'
+      (databags_to_be - databags_as_is).each do |bag|
+        puts "Creating databag '#{bag}'.."
+        run_command("knife data bag create #{bag}", logger)
+      end
+
+      puts 'Checking items..'
+      databags_to_be.each do |bag|
+        items_as_is = `knife data bag show #{bag}`.split
+        Dir.entries(data_bags_dir+'/'+bag).select do |file|
+          /^.*\.json/.match(file)
+        end.each do |item|
+          item_file = data_bags_dir+'/'+bag+'/'+item
+          item = item.gsub('.json', '')
+          if JSON.parse(File.read(item_file))['vault']
+            if items_as_is.include? item
+              run_command(
+                "knife vault update #{bag} #{item} --json #{item_file} --search '*:*' -M client",
+                logger
+              )
+            else
+              run_command(
+                "knife vault create #{bag} #{item} --json #{item_file} --search '*:*' -M client",
+                logger
+              )
+            end
+            run_command(
+              "knife vault refresh #{bag} #{item} --clean-unknown-clients -M client",
+              logger
+            )
+          else
+            run_command("knife data bag from file #{bag} #{item_file}", logger)
+          end
         end
-        puts 'Updating data bags..'
-        update_cmd = "knife data bag from file #{bag} #{data_bags_dir}/#{bag}"
-        puts update_cmd
-        system(update_cmd)
       end
     end
 

@@ -169,15 +169,15 @@ module Gogetit
         args[:config][:'user.user-data']['ssh_authorized_keys'].push(key['key'])
       end
 
+      # To disable to update apt database on first boot
+      # so chef client can keep doing its job.
+      args[:config][:'user.user-data']['package_update'] = false
+
       pkg_repos.each do |repo|
         if repo['name'] == 'main_archive'
           args[:config][:'user.user-data']['apt_mirror'] = repo['url']
         end
       end
-
-      # To disable to update apt database on first boot
-      # so chef client can keep doing its job.
-      args[:config][:'user.user-data']['package_update'] = false
 
       args[:config][:"user.user-data"] = \
         YAML.dump(args[:config][:"user.user-data"])[4..-1]

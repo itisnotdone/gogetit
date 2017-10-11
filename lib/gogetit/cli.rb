@@ -42,7 +42,7 @@ module Gogetit
       # post-tasks
       if options[:chef]
         knife_bootstrap(name, options[:provider], Gogetit.config, Gogetit.logger)
-        update_vault(Gogetit.config, Gogetit.logger)
+        update_databags(Gogetit.config, Gogetit.logger)
       end
       Gogetit.config[:default][:user] ||= ENV['USER']
       puts "ssh #{Gogetit.config[:default][:user]}@#{name}"
@@ -66,7 +66,7 @@ module Gogetit
       # post-tasks
       if options[:chef]
         knife_remove(name, Gogetit.logger) if options[:chef]
-        update_vault(Gogetit.config, Gogetit.logger)
+        update_databags(Gogetit.config, Gogetit.logger)
       end
     end
 
