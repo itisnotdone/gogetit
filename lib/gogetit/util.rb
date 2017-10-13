@@ -141,32 +141,32 @@ module Gogetit
 		  end
 		end
 
-    def wait_until_available(fqdn, logger)
+    def wait_until_available(ip_or_fqdn, logger)
       logger.info("Calling <#{__method__.to_s}>")
-      until ping_available?(fqdn, logger)
+      until ping_available?(ip_or_fqdn, logger)
         logger.info("Calling <#{__method__.to_s}> for ping to be ready..")
         sleep 3
       end
-      logger.info("#{fqdn} is now available to ping..")
+      logger.info("#{ip_or_fqdn} is now available to ping..")
 
-      until ssh_available?(fqdn, 'ubuntu', logger)
+      until ssh_available?(ip_or_fqdn, 'ubuntu', logger)
         logger.info("Calling <#{__method__.to_s}> for ssh to be ready..")
         sleep 3
       end
-      logger.info("#{fqdn} is now available to ssh..")
+      logger.info("#{ip_or_fqdn} is now available to ssh..")
     end
 
     def ping_available?(host, logger)
-      # host can be both IP and FQDN.
+      # host can be both IP and ip_or_fqdn.
       logger.info("Calling <#{__method__.to_s}> for #{host}")
       `ping -c 1 -W 1 #{host}`
       $?.exitstatus == 0
     end
 
-    def ssh_available?(fqdn, user, logger)
+    def ssh_available?(ip_or_fqdn, user, logger)
       logger.info("Calling <#{__method__.to_s}>")
       begin
-        Net::SSH.start(fqdn, user).class
+        Net::SSH.start(ip_or_fqdn, user).class
       rescue Exception => e
         puts e
       end

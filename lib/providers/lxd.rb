@@ -42,44 +42,78 @@ module Gogetit
       end
     end
 
-    def generate_args(args, options)
+    # to generate 'user.user-data'
+    def generate_user_data(args, options)
       logger.info("Calling <#{__method__.to_s}>")
-      args[:devices] = {}
 
-      ifaces = check_ip_available(options['ipaddresses'], maas, logger)
-      abort("There is no dns server specified for the gateway network.") \
-        unless ifaces[0]['dns_servers'][0]
-      abort("There is no gateway specified for the gateway network.") \
-        unless ifaces[0]['gateway_ip']
-      args[:ifaces] = ifaces
-      args[:config][:'user.network-config'] = {
-        'version' => 1,
-        'config' => [
-          {
-            'type' => 'nameserver',
-            'address' => ifaces[0]['dns_servers'][0]
-          }
-        ]
-      }
+      args = {}
+      args[:config] = {}
+      if options['no-maas']
+        args[:config][:'user.user-data'] = \
+          YAML.load_file(options['file'])[:config]['user.user-data']
+      else
+        sshkeys = maas.get_sshkeys
+        pkg_repos = maas.get_package_repos
 
-      ifaces.each_with_index do |iface,index|
-        if index == 0
-          iface_conf = {
-            'type' => 'physical',
-            'name' => "eth#{index}",
-            'subnets' => [
-              {
-                'type' => 'static',
-                'ipv4' => true,
-                'address' => iface['ip'] + '/' + iface['cidr'].split('/')[1],
-                'gateway' => iface['gateway_ip'],
-                'mtu' => iface['vlan']['mtu'],
-                'control' => 'auto'
-              }
-            ]
-          }
-        elsif index > 0
-          if ifaces[0]['vlan']['name'] != 'untagged'
+        args[:config][:'user.user-data'] = { 'ssh_authorized_keys' => [] }
+
+        sshkeys.each do |key|
+          args[:config][:'user.user-data']['ssh_authorized_keys'].push(key['key'])
+        end
+
+        pkg_repos.each do |repo|
+          if repo['name'] == 'main_archive'
+            args[:config][:'user.user-data']['apt_mirror'] = repo['url']
+          end
+        end
+
+        args[:config][:"user.user-data"]['maas'] = true
+      end
+
+      # To disable to update apt database on first boot
+      # so chef client can keep doing its job.
+      args[:config][:'user.user-data']['package_update'] = false
+
+      args[:config][:"user.user-data"] = \
+        "#cloud-config\n" + YAML.dump(args[:config][:"user.user-data"])[4..-1]
+
+      return args
+    end
+
+    def generate_network_config(args, options)
+      logger.info("Calling <#{__method__.to_s}>")
+      if options['no-maas']
+        args = YAML.load_file(options['file'])
+
+        options['ip_to_access'] = \
+          args[:config][:"user.network-config"]['config'][1]['subnets'][0]['address']
+          .split('/')[0]
+        
+        args[:config][:"user.network-config"] = \
+          YAML.dump(args[:config][:"user.network-config"])[4..-1]
+
+      elsif options['ipaddresses']
+        ifaces = check_ip_available(options['ipaddresses'], maas, logger)
+        abort("There is no dns server specified for the gateway network.") \
+          unless ifaces[0]['dns_servers'][0]
+        abort("There is no gateway specified for the gateway network.") \
+          unless ifaces[0]['gateway_ip']
+
+        args[:ifaces] = ifaces
+
+        args[:config][:'user.network-config'] = {
+          'version' => 1,
+          'config' => [
+            {
+              'type' => 'nameserver',
+              'address' => ifaces[0]['dns_servers'][0]
+            }
+          ]
+        }
+
+        # to generate configuration for [:config][:'user.network-config']['config']
+        ifaces.each_with_index do |iface,index|
+          if index == 0
             iface_conf = {
               'type' => 'physical',
               'name' => "eth#{index}",
@@ -88,48 +122,101 @@ module Gogetit
                   'type' => 'static',
                   'ipv4' => true,
                   'address' => iface['ip'] + '/' + iface['cidr'].split('/')[1],
+                  'gateway' => iface['gateway_ip'],
                   'mtu' => iface['vlan']['mtu'],
                   'control' => 'auto'
                 }
               ]
             }
-          elsif ifaces[0]['vlan']['name'] == 'untagged'
-            iface_conf = {
-              'type' => 'vlan',
-              'name' => "eth0.#{iface['vlan']['vid'].to_s}",
-              'vlan_id' => iface['vlan']['vid'].to_s,
-              'vlan_link' => 'eth0',
-              'subnets' => [
-                {
-                  'type' => 'static',
-                  'ipv4' => true,
-                  'address' => iface['ip'] + '/' + iface['cidr'].split('/')[1],
-                  'mtu' => iface['vlan']['mtu'],
-                  'control' => 'auto'
-                }
-              ]
-            }
+          elsif index > 0
+            if ifaces[0]['vlan']['name'] != 'untagged'
+              iface_conf = {
+                'type' => 'physical',
+                'name' => "eth#{index}",
+                'subnets' => [
+                  {
+                    'type' => 'static',
+                    'ipv4' => true,
+                    'address' => iface['ip'] + '/' + iface['cidr'].split('/')[1],
+                    'mtu' => iface['vlan']['mtu'],
+                    'control' => 'auto'
+                  }
+                ]
+              }
+            elsif ifaces[0]['vlan']['name'] == 'untagged'
+              iface_conf = {
+                'type' => 'vlan',
+                'name' => "eth0.#{iface['vlan']['vid'].to_s}",
+                'vlan_id' => iface['vlan']['vid'].to_s,
+                'vlan_link' => 'eth0',
+                'subnets' => [
+                  {
+                    'type' => 'static',
+                    'ipv4' => true,
+                    'address' => iface['ip'] + '/' + iface['cidr'].split('/')[1],
+                    'mtu' => iface['vlan']['mtu'],
+                    'control' => 'auto'
+                  }
+                ]
+              }
+            end
           end
+
+          args[:config][:'user.network-config']['config'].push(iface_conf)
         end
 
-        args[:config][:'user.network-config']['config'].push(iface_conf)
-      end
+        args[:config][:"user.network-config"] = \
+          YAML.dump(args[:config][:"user.network-config"])[4..-1]
 
-      args[:config][:"user.network-config"] = \
-        YAML.dump(args[:config][:"user.network-config"])[4..-1]
+      return args
+    end
 
-      # To configure devices
-      ifaces.each_with_index do |iface,index|
-        if index == 0
-          if iface['vlan']['name'] == 'untagged' # or vid == 0
-            args[:devices][:"eth#{index}"] = {
-              mtu: iface['vlan']['mtu'].to_s,   #This must be string
-              name: "eth#{index}",
-              nictype: 'bridged',
-              parent: config[:default][:native_bridge],
-              type: 'nic'
-            }
-          elsif iface['vlan']['name'] != 'untagged' # or vid != 0
+    # To configure devices
+    def generate_devices(args, options)
+      args[:devices] = {}
+
+      if options['no-maas']
+        args = YAML.load_file(options['file'])
+
+        options['ip_to_access'] = \
+          args[:config][:"user.network-config"]['config'][1]['subnets'][0]['address']
+          .split('/')[0]
+        
+        args[:config][:"user.network-config"] = \
+          YAML.dump(args[:config][:"user.network-config"])[4..-1]
+
+      elsif options['ipaddresses']
+        ifaces = check_ip_available(options['ipaddresses'], maas, logger)
+        abort("There is no dns server specified for the gateway network.") \
+          unless ifaces[0]['dns_servers'][0]
+        abort("There is no gateway specified for the gateway network.") \
+          unless ifaces[0]['gateway_ip']
+
+        args[:ifaces] = ifaces
+
+        ifaces.each_with_index do |iface,index|
+          if index == 0
+            if iface['vlan']['name'] == 'untagged' # or vid == 0
+              args[:devices][:"eth#{index}"] = {
+                mtu: iface['vlan']['mtu'].to_s,   #This must be string
+                name: "eth#{index}",
+                nictype: 'bridged',
+                parent: config[:default][:native_bridge],
+                type: 'nic'
+              }
+            elsif iface['vlan']['name'] != 'untagged' # or vid != 0
+              args[:devices][:"eth#{index}"] = {
+                mtu: iface['vlan']['mtu'].to_s,   #This must be string
+                name: "eth#{index}",
+                nictype: 'bridged',
+                parent: config[:default][:native_bridge] + "-" + iface['vlan']['vid'].to_s,
+                type: 'nic'
+              }
+            end
+          # When ifaces[0]['vlan']['name'] == 'untagged' and index > 0,
+          # it does not need to generate more devices 
+          # since it will configure the IPs with tagged VLANs.
+          elsif ifaces[0]['vlan']['name'] != 'untagged'
             args[:devices][:"eth#{index}"] = {
               mtu: iface['vlan']['mtu'].to_s,   #This must be string
               name: "eth#{index}",
@@ -138,65 +225,7 @@ module Gogetit
               type: 'nic'
             }
           end
-        # When ifaces[0]['vlan']['name'] == 'untagged' and index > 0,
-        # it does not need to generate more devices 
-        # since it will configure the IPs with tagged VLANs.
-        elsif ifaces[0]['vlan']['name'] != 'untagged'
-          args[:devices][:"eth#{index}"] = {
-            mtu: iface['vlan']['mtu'].to_s,   #This must be string
-            name: "eth#{index}",
-            nictype: 'bridged',
-            parent: config[:default][:native_bridge] + "-" + iface['vlan']['vid'].to_s,
-            type: 'nic'
-          }
         end
-      end
-
-      return args
-    end
-
-    def generate_common_args
-      logger.info("Calling <#{__method__.to_s}>")
-      args = {}
-      sshkeys = maas.get_sshkeys
-      pkg_repos = maas.get_package_repos
-
-      args[:config] = {
-        'user.user-data': { 'ssh_authorized_keys' => [] }
-      }
-
-      sshkeys.each do |key|
-        args[:config][:'user.user-data']['ssh_authorized_keys'].push(key['key'])
-      end
-
-      # To disable to update apt database on first boot
-      # so chef client can keep doing its job.
-      args[:config][:'user.user-data']['package_update'] = false
-
-      pkg_repos.each do |repo|
-        if repo['name'] == 'main_archive'
-          args[:config][:'user.user-data']['apt_mirror'] = repo['url']
-        end
-      end
-
-      args[:config][:"user.user-data"] = \
-        YAML.dump(args[:config][:"user.user-data"])[4..-1]
-
-      args[:config][:"user.user-data"] = "#cloud-config\n" + args[:config][:"user.user-data"]
-      return args
-    end
-
-    def create(name, options = {})
-      logger.info("Calling <#{__method__.to_s}>")
-      abort("Container or Hostname #{name} already exists!") \
-        if container_exists?(name) or maas.domain_name_exists?(name)
-
-      args = generate_common_args
-
-      if options['ipaddresses']
-        args = generate_args(args, options)
-      elsif options[:vlans]
-        #check_vlan_available(options[:vlans])
       else
         abort("native_bridge #{config[:default][:native_bridge]} does not exist.") \
            unless conn.networks.include? config[:default][:native_bridge]
@@ -224,6 +253,57 @@ module Gogetit
         }
       end
 
+      return args
+    end
+
+    def reserve_ips(name, args, container)
+      # Generate params to reserve IPs
+      args[:ifaces].each_with_index do |iface,index|
+        if index == 0
+          params = {
+            'subnet' => iface['cidr'],
+            'ip' => iface['ip'],
+            'hostname' => name,
+            'mac' => container[:expanded_config][:"volatile.eth#{index}.hwaddr"]
+          }
+        elsif index > 0
+          # if dot, '.', is used as a conjunction instead of '-',
+          # it fails ocuring '404 not found'.
+          # if under score, '_', is used as a conjunction instead of '-',
+          # it breaks MAAS DNS somehow..
+          if args[:ifaces][0]['vlan']['name'] == 'untagged'
+            params = {
+              'subnet' => iface['cidr'],
+              'ip' => iface['ip'],
+              'hostname' => 'eth0' + '-' + iface['vlan']['vid'].to_s  + '-' + name,
+              'mac' => container[:expanded_config][:"volatile.eth0.hwaddr"]
+            }
+          elsif args[:ifaces][0]['vlan']['name'] != 'untagged'
+            params = {
+              'subnet' => iface['cidr'],
+              'ip' => iface['ip'],
+              'hostname' => "eth#{index}" + '-' + name,
+              'mac' => container[:expanded_config][:"volatile.eth#{index}.hwaddr"]
+            }
+          end
+        end
+        maas.ipaddresses('reserve', params)
+      end
+    end
+
+    def create(name, options = {})
+      logger.info("Calling <#{__method__.to_s}>")
+
+      abort("Container #{name} already exists!") \
+        if container_exists?(name)
+
+      abort("Domain #{name}.#{maas.get_domain} already exists!") \
+        if maas.domain_name_exists?(name) unless options['no-maas']
+
+      args = generate_user_data(args, options)
+      args = generate_network_config(args, options)
+      args = generate_devices(args, options)
+
       args[:alias] ||= config[:lxd][:default_alias]
       args[:sync] ||= true
 
@@ -235,46 +315,28 @@ module Gogetit
       # Fetch container object again
       container = conn.container(name)
 
-      if options['vlans'] or options['ipaddresses']
-        # Generate params to reserve IPs
-        args[:ifaces].each_with_index do |iface,index|
-          if index == 0
-            params = {
-              'subnet' => iface['cidr'],
-              'ip' => iface['ip'],
-              'hostname' => name,
-              'mac' => container[:expanded_config][:"volatile.eth#{index}.hwaddr"]
-            }
-          elsif index > 0
-            # if dot, '.', is used as a conjunction instead of '-',
-            # it fails ocuring '404 not found'.
-            # if under score, '_', is used as a conjunction instead of '-',
-            # it breaks MAAS DNS somehow..
-            if args[:ifaces][0]['vlan']['name'] == 'untagged'
-              params = {
-                'subnet' => iface['cidr'],
-                'ip' => iface['ip'],
-                'hostname' => 'eth0' + '-' + iface['vlan']['vid'].to_s  + '-' + name,
-                'mac' => container[:expanded_config][:"volatile.eth0.hwaddr"]
-              }
-            elsif args[:ifaces][0]['vlan']['name'] != 'untagged'
-              params = {
-                'subnet' => iface['cidr'],
-                'ip' => iface['ip'],
-                'hostname' => "eth#{index}" + '-' + name,
-                'mac' => container[:expanded_config][:"volatile.eth#{index}.hwaddr"]
-              }
-            end
-          end
-          maas.ipaddresses('reserve', params)
-        end
-      end
+      reserve_ips(name, args, container) \
+        if options['vlans'] or options['ipaddresses'] \
+          unless options['no-maas']
 
       conn.start_container(name, :sync=>"true")
 
-      fqdn = name + '.' + maas.get_domain
-      wait_until_available(fqdn, logger)
+      if options['no-maas']
+        ip_or_fqdn = options['ip_to_access']
+      else
+        ip_or_fqdn = name + '.' + maas.get_domain
+      end
+
+      wait_until_available(ip_or_fqdn, logger)
       logger.info("#{name} has been created.")
+
+      config[:default][:user] ||= ENV['USER']
+      if options['no-maas']
+        puts "ssh #{config[:default][:user]}@#{options['ip_to_access']}"
+      else
+        puts "ssh #{config[:default][:user]}@#{name}"
+      end
+
       true
     end
 
@@ -289,31 +351,36 @@ module Gogetit
       end
 
       wait_until_state(name, 'Stopped')
-      conn.delete_container(name, args)
 
-      if container[:config][:"user.network-config"]
-        net_conf = YAML.load(
-          container[:config][:"user.network-config"]
-        )['config']
-        # To remove DNS configuration
-        net_conf.shift
+      if YAML.load(container[:config][:"user.user-data"])['maas']
+        logger.info("This is a MAAS enabled container.")
+        if container[:config][:"user.network-config"]
+          net_conf = YAML.load(
+            container[:config][:"user.network-config"]
+          )['config']
+          # To remove DNS configuration
+          net_conf.shift
 
-        net_conf.each do |nic|
-          if nic['subnets'][0]['type'] == 'static'
-            # It assumes we only assign a single subnet on a VLAN.
-            # Subnets in a VLAN, VLANs in a Fabric
-            ip = nic['subnets'][0]['address'].split('/')[0]
+          net_conf.each do |nic|
+            if nic['subnets'][0]['type'] == 'static'
+              # It assumes we only assign a single subnet on a VLAN.
+              # Subnets in a VLAN, VLANs in a Fabric
+              ip = nic['subnets'][0]['address'].split('/')[0]
 
-            if maas.ipaddresses_reserved?(ip)
-              maas.ipaddresses('release', { 'ip' => ip })
+              if maas.ipaddresses_reserved?(ip)
+                maas.ipaddresses('release', { 'ip' => ip })
+              end
             end
           end
         end
+
+        maas.delete_dns_record(name)
       end
+
+      conn.delete_container(name, args)
 
       # When multiple static IPs were reserved, it will not delete anything
       # since they are deleted when releasing the IPs above.
-      maas.delete_dns_record(name)
       logger.info("#{name} has been destroyed.")
       true
     end

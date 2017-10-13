@@ -21,16 +21,25 @@ module Gogetit
       :default => 'lxd', :desc => 'A provider such as lxd and libvirt'
     method_option :chef, :aliases => '-c', :type => :boolean, \
       :default => false, :desc => 'Chef awareness'
-
     method_option :vlans, :aliases => '-v', :type => :array, \
       :desc => 'A list of VLAN IDs to connect to'
     method_option :ipaddresses, :aliases => '-i', :type => :array, \
       :desc => 'A list of static IPs to assign'
+    method_option :"no-maas", :type => :boolean, \
+      :desc => 'Without MAAS awareness'
+    method_option :"file", :aliases => '-f', :type => :string, \
+      :desc => 'File location'
     def create(name)
-      abort("vlans and ipaddresses can not be used at the same time.") \
+      abort("'vlans' and 'ipaddresses' can not be set together.") \
         if options['vlans'] and options['ipaddresses']
 
-      case options[:provider]
+      abort("when 'no-maas', the network configuration have to be set by 'file'.") \
+        if options['no-maas'] and (options['vlans'] or options['ipaddresses'])
+
+      abort("'no-maas' and 'file' have to be set together.") \
+        if options['no-maas'] ^ !!options['file']
+
+      case options['provider']
       when 'lxd'
         Gogetit.lxd.create(name, options.to_hash)
       when 'libvirt'
@@ -40,12 +49,10 @@ module Gogetit
       end
 
       # post-tasks
-      if options[:chef]
+      if options['chef']
         knife_bootstrap(name, options[:provider], Gogetit.config, Gogetit.logger)
         update_databags(Gogetit.config, Gogetit.logger)
       end
-      Gogetit.config[:default][:user] ||= ENV['USER']
-      puts "ssh #{Gogetit.config[:default][:user]}@#{name}"
     end
 
     desc 'destroy NAME', 'Destroy either a container or KVM domain.'
@@ -64,7 +71,7 @@ module Gogetit
         end
       end
       # post-tasks
-      if options[:chef]
+      if options['chef']
         knife_remove(name, Gogetit.logger) if options[:chef]
         update_databags(Gogetit.config, Gogetit.logger)
       end
