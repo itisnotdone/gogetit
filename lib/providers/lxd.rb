@@ -48,6 +48,7 @@ module Gogetit
 
       args = {}
       args[:config] = {}
+
       if options['no-maas']
         args[:config][:'user.user-data'] = \
           YAML.load_file(options['file'])[:config]['user.user-data']
@@ -83,36 +84,34 @@ module Gogetit
     def generate_network_config(args, options)
       logger.info("Calling <#{__method__.to_s}>")
       if options['no-maas']
-        args = YAML.load_file(options['file'])
+        args[:config][:'user.network-config'] = \
+          YAML.load_file(options['file'])[:config][:'user.network-config']
 
         options['ip_to_access'] = \
           args[:config][:"user.network-config"]['config'][1]['subnets'][0]['address']
           .split('/')[0]
-        
         args[:config][:"user.network-config"] = \
           YAML.dump(args[:config][:"user.network-config"])[4..-1]
 
       elsif options['ipaddresses']
-        ifaces = check_ip_available(options['ipaddresses'], maas, logger)
+        options[:ifaces] = check_ip_available(options['ipaddresses'], maas, logger)
         abort("There is no dns server specified for the gateway network.") \
-          unless ifaces[0]['dns_servers'][0]
+          unless options[:ifaces][0]['dns_servers'][0]
         abort("There is no gateway specified for the gateway network.") \
-          unless ifaces[0]['gateway_ip']
-
-        args[:ifaces] = ifaces
+          unless options[:ifaces][0]['gateway_ip']
 
         args[:config][:'user.network-config'] = {
           'version' => 1,
           'config' => [
             {
               'type' => 'nameserver',
-              'address' => ifaces[0]['dns_servers'][0]
+              'address' => options[:ifaces][0]['dns_servers'][0]
             }
           ]
         }
 
         # to generate configuration for [:config][:'user.network-config']['config']
-        ifaces.each_with_index do |iface,index|
+        options[:ifaces].each_with_index do |iface,index|
           if index == 0
             iface_conf = {
               'type' => 'physical',
@@ -129,7 +128,7 @@ module Gogetit
               ]
             }
           elsif index > 0
-            if ifaces[0]['vlan']['name'] != 'untagged'
+            if options[:ifaces][0]['vlan']['name'] != 'untagged'
               iface_conf = {
                 'type' => 'physical',
                 'name' => "eth#{index}",
@@ -143,7 +142,7 @@ module Gogetit
                   }
                 ]
               }
-            elsif ifaces[0]['vlan']['name'] == 'untagged'
+            elsif options[:ifaces][0]['vlan']['name'] == 'untagged'
               iface_conf = {
                 'type' => 'vlan',
                 'name' => "eth0.#{iface['vlan']['vid'].to_s}",
@@ -167,6 +166,7 @@ module Gogetit
 
         args[:config][:"user.network-config"] = \
           YAML.dump(args[:config][:"user.network-config"])[4..-1]
+      end
 
       return args
     end
@@ -176,32 +176,18 @@ module Gogetit
       args[:devices] = {}
 
       if options['no-maas']
-        args = YAML.load_file(options['file'])
-
-        options['ip_to_access'] = \
-          args[:config][:"user.network-config"]['config'][1]['subnets'][0]['address']
-          .split('/')[0]
-        
-        args[:config][:"user.network-config"] = \
-          YAML.dump(args[:config][:"user.network-config"])[4..-1]
+        args[:devices] = \
+          YAML.load_file(options['file'])[:devices]
 
       elsif options['ipaddresses']
-        ifaces = check_ip_available(options['ipaddresses'], maas, logger)
-        abort("There is no dns server specified for the gateway network.") \
-          unless ifaces[0]['dns_servers'][0]
-        abort("There is no gateway specified for the gateway network.") \
-          unless ifaces[0]['gateway_ip']
-
-        args[:ifaces] = ifaces
-
-        ifaces.each_with_index do |iface,index|
+        options[:ifaces].each_with_index do |iface,index|
           if index == 0
             if iface['vlan']['name'] == 'untagged' # or vid == 0
               args[:devices][:"eth#{index}"] = {
                 mtu: iface['vlan']['mtu'].to_s,   #This must be string
                 name: "eth#{index}",
                 nictype: 'bridged',
-                parent: config[:default][:native_bridge],
+                parent: config[:default][:root_bridge],
                 type: 'nic'
               }
             elsif iface['vlan']['name'] != 'untagged' # or vid != 0
@@ -209,28 +195,28 @@ module Gogetit
                 mtu: iface['vlan']['mtu'].to_s,   #This must be string
                 name: "eth#{index}",
                 nictype: 'bridged',
-                parent: config[:default][:native_bridge] + "-" + iface['vlan']['vid'].to_s,
+                parent: config[:default][:root_bridge] + "-" + iface['vlan']['vid'].to_s,
                 type: 'nic'
               }
             end
-          # When ifaces[0]['vlan']['name'] == 'untagged' and index > 0,
+          # When options[:ifaces][0]['vlan']['name'] == 'untagged' and index > 0,
           # it does not need to generate more devices 
           # since it will configure the IPs with tagged VLANs.
-          elsif ifaces[0]['vlan']['name'] != 'untagged'
+          elsif options[:ifaces][0]['vlan']['name'] != 'untagged'
             args[:devices][:"eth#{index}"] = {
               mtu: iface['vlan']['mtu'].to_s,   #This must be string
               name: "eth#{index}",
               nictype: 'bridged',
-              parent: config[:default][:native_bridge] + "-" + iface['vlan']['vid'].to_s,
+              parent: config[:default][:root_bridge] + "-" + iface['vlan']['vid'].to_s,
               type: 'nic'
             }
           end
         end
       else
-        abort("native_bridge #{config[:default][:native_bridge]} does not exist.") \
-           unless conn.networks.include? config[:default][:native_bridge]
+        abort("root_bridge #{config[:default][:root_bridge]} does not exist.") \
+           unless conn.networks.include? config[:default][:root_bridge]
 
-        native_bridge_mtu = nil
+        root_bridge_mtu = nil
         # It assumes you only use one fabric as of now,
         # since there might be more fabrics with each untagged vlans on them,
         # which might make finding exact mtu fail as following process.
@@ -238,17 +224,17 @@ module Gogetit
 
         maas.get_subnets.each do |subnet|
           if subnet['vlan']['name'] == 'untagged' and subnet['vlan']['fabric'] == default_fabric
-            native_bridge_mtu = subnet['vlan']['mtu']
+            root_bridge_mtu = subnet['vlan']['mtu']
             break
           end
         end
 
         args[:devices] = {}
         args[:devices][:"eth0"] = {
-          mtu: native_bridge_mtu.to_s,   #This must be string
+          mtu: root_bridge_mtu.to_s,   #This must be string
           name: 'eth0',
           nictype: 'bridged',
-          parent: config[:default][:native_bridge],
+          parent: config[:default][:root_bridge],
           type: 'nic'
         }
       end
@@ -256,9 +242,9 @@ module Gogetit
       return args
     end
 
-    def reserve_ips(name, args, container)
+    def reserve_ips(name, options, container)
       # Generate params to reserve IPs
-      args[:ifaces].each_with_index do |iface,index|
+      options[:ifaces].each_with_index do |iface,index|
         if index == 0
           params = {
             'subnet' => iface['cidr'],
@@ -271,14 +257,14 @@ module Gogetit
           # it fails ocuring '404 not found'.
           # if under score, '_', is used as a conjunction instead of '-',
           # it breaks MAAS DNS somehow..
-          if args[:ifaces][0]['vlan']['name'] == 'untagged'
+          if options[:ifaces][0]['vlan']['name'] == 'untagged'
             params = {
               'subnet' => iface['cidr'],
               'ip' => iface['ip'],
               'hostname' => 'eth0' + '-' + iface['vlan']['vid'].to_s  + '-' + name,
               'mac' => container[:expanded_config][:"volatile.eth0.hwaddr"]
             }
-          elsif args[:ifaces][0]['vlan']['name'] != 'untagged'
+          elsif options[:ifaces][0]['vlan']['name'] != 'untagged'
             params = {
               'subnet' => iface['cidr'],
               'ip' => iface['ip'],
@@ -315,7 +301,7 @@ module Gogetit
       # Fetch container object again
       container = conn.container(name)
 
-      reserve_ips(name, args, container) \
+      reserve_ips(name, options, container) \
         if options['vlans'] or options['ipaddresses'] \
           unless options['no-maas']
 

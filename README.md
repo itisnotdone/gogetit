@@ -56,6 +56,10 @@ gogetit create lxd01 -p lxd -i 192.168.10.10 10.0.0.2
 gogetit create kvm01 -p libvirt
 gogetit create kvm01 -p libvirt -i 192.168.10.10 10.0.0.2
 
+# to create a LXD container without MAAS awareness
+gogetit create lxd01 --no-maas -f lxd_without_maas.yml
+gogetit create lxd01 --no-maas -f lxd_without_maas_vlans.yml
+
 # to provision with a bare metal machine
 # gogetit create kvm01 -p bare
 

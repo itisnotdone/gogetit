@@ -1,0 +1,48 @@
+---
+:config:
+  :user.network-config:
+    version: 1
+    config:
+    - type: nameserver
+      address: $maas_ip
+    - type: physical
+      name: eth0
+      subnets:
+      - type: static
+        ipv4: true
+        address: 192.168.111.10/24
+        gateway: 192.168.111.1
+        mtu: 8954
+        control: auto
+    - type: vlan
+      name: eth0.112
+      vlan_id: '112'
+      vlan_link: eth0
+      subnets:
+      - type: static
+        ipv4: true
+        address: 192.168.112.10/24
+        mtu: 8954
+        control: auto
+    - type: vlan
+      name: eth0.113
+      vlan_id: '113'
+      vlan_link: eth0
+      subnets:
+      - type: static
+        ipv4: true
+        address: 192.168.113.10/24
+        mtu: 8954
+        control: auto
+  user.user-data:
+    ssh_authorized_keys:
+      - ssh-rsa blahblahblah someone1@somewhere1
+      - ssh-rsa blahblahblah someone2@somewhere2
+    apt_mirror: http://kr.archive.ubuntu.com/ubuntu
+:devices:
+  :eth0:
+    :mtu: '8954'
+    :name: eth0
+    :nictype: bridged
+    :parent: $root_bridge
+    :type: nic

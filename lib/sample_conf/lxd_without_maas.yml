@@ -1,0 +1,56 @@
+---
+:config:
+  :user.network-config:
+    version: 1
+    config:
+    - type: nameserver
+      address: $maas_ip
+    - type: physical
+      name: eth0
+      subnets:
+      - type: static
+        ipv4: true
+        address: 192.168.112.10/24
+        gateway: 192.168.112.1
+        mtu: 8954
+        control: auto
+    - type: physical
+      name: eth1
+      subnets:
+      - type: static
+        ipv4: true
+        address: 192.168.113.10/24
+        mtu: 8954
+        control: auto
+    - type: physical
+      name: eth2
+      subnets:
+      - type: static
+        ipv4: true
+        address: 192.168.114.10/24
+        mtu: 8954
+        control: auto
+  user.user-data:
+    ssh_authorized_keys:
+    - ssh-rsa blahblah someone1@somewhere1
+    - ssh-rsa blahblah someone2@somewhere2
+  apt_mirror: http://kr.archive.ubuntu.com/ubuntu
+:devices:
+  eth0:
+    mtu: "8954"
+    name: eth0
+    nictype: bridged
+    parent: $root_bridge-112
+    type: nic
+  eth1:
+    mtu: "8954"
+    name: eth1
+    nictype: bridged
+    parent: $root_bridge-113
+    type: nic
+  eth2:
+    mtu: "8954"
+    name: eth2
+    nictype: bridged
+    parent: $root_bridge-114
+    type: nic

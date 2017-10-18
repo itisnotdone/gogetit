@@ -1,6 +1,6 @@
 default:
   user: ubuntu
-  native_bridge: my_favorite_bridge
+  root_bridge: $root_bridge
 # etcd:
 #   url: http://etcd.example.com:2379
 # about MAAS

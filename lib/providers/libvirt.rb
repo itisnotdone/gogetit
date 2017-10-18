@@ -59,13 +59,13 @@ module Gogetit
         if index == 0
           if iface['vlan']['name'] == 'untagged'
             nic = {
-              network: config[:default][:native_bridge],
-              portgroup: config[:default][:native_bridge]
+              network: config[:default][:root_bridge],
+              portgroup: config[:default][:root_bridge]
             }
           elsif iface['vlan']['name'] != 'untagged'
             nic = {
-              network: config[:default][:native_bridge],
-              portgroup: config[:default][:native_bridge] + '-' + iface['vlan']['vid'].to_s
+              network: config[:default][:root_bridge],
+              portgroup: config[:default][:root_bridge] + '-' + iface['vlan']['vid'].to_s
             }
           end
           domain[:nic].push(nic)
@@ -75,8 +75,8 @@ module Gogetit
           # This will not be hit as of now and might be deprecated.
           if ifaces[0]['vlan']['name'] != 'untagged'
             nic = {
-              network: config[:default][:native_bridge],
-              portgroup: config[:default][:native_bridge] + '-' + iface['vlan']['vid'].to_s
+              network: config[:default][:root_bridge],
+              portgroup: config[:default][:root_bridge] + '-' + iface['vlan']['vid'].to_s
             }
             domain[:nic].push(nic)
           end
@@ -100,8 +100,8 @@ module Gogetit
       else
         domain[:nic] = [
           {
-            network: config[:default][:native_bridge],
-            portgroup: config[:default][:native_bridge]
+            network: config[:default][:root_bridge],
+            portgroup: config[:default][:root_bridge]
           }
         ]
       end
