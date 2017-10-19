@@ -9,11 +9,11 @@ module Gogetit
 
     desc 'list', 'List containers and instances, running currently.'
     def list
-      puts "Listing LXD containers on #{Gogetit.config[:lxd][:url]}.."
-      system("lxc list #{Gogetit.config[:lxd][:name]}:")
+      puts "Listing LXD containers on #{Gogetit.config[:lxd][:nodes][0][:url]}.."
+      system("lxc list #{Gogetit.config[:lxd][:nodes][0][:name]}:")
       puts ''
-      puts "Listing KVM domains on #{Gogetit.config[:libvirt][:url]}.."
-      system("virsh -c #{Gogetit.config[:libvirt][:url]} list --all")
+      puts "Listing KVM domains on #{Gogetit.config[:libvirt][:nodes][0][:url]}.."
+      system("virsh -c #{Gogetit.config[:libvirt][:nodes][0][:url]} list --all")
     end
 
     desc 'create NAME', 'Create either a container or KVM domain.'

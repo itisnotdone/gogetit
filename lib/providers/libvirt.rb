@@ -12,7 +12,7 @@ module Gogetit
 
     def initialize(conf, maas, logger)
       @config = conf
-      @conn = Libvirt::open(config[:libvirt][:url])
+      @conn = Libvirt::open(config[:libvirt][:nodes][0][:url])
       @maas = maas
       @logger = logger
     end

@@ -1,22 +1,29 @@
 default:
   user: ubuntu
   root_bridge: $root_bridge
-# etcd:
-#   url: http://etcd.example.com:2379
-# about MAAS
+
 maas:
   key: K:E:Y
   url: http://maas.example.com/MAAS/api/2.0
-# about LXD
+
 lxd:
-  url: https://lxd.example.com:8443
-  name: REMOTE_NAME
+  nodes:
+    -
+      name: lxd01
+      url: https://lxd01.example.com:8443
+    -
+      name: lxd02
+      url: https://lxd01.example.com:8443
   default_alias: ubuntu-16.04
-  profiles:
-  - my_favorite_bridge
-# about Libvirt
+
 libvirt:
-  url: qemu+ssh://WHOAMI@kvm.example.com/system
+  nodes:
+    -
+      name: kvm01
+      url: qemu+ssh://$whoami@kvm01.example.com/system
+    -
+      name: kvm02
+      url: qemu+ssh://$whoami@kvm02.example.com/system
   specs:
     default:
       vcpu: 1
@@ -39,7 +46,7 @@ libvirt:
         -
           pool: hdd
           capacity: 8
-# about Chef
+
 chef:
   chef_repo_root: /SOMEWHERE/CHEF_REPO
   target_environment: THE_ENV_YOU_ARE_TARGETING
@@ -47,12 +54,3 @@ chef:
     install_script: 
       libvirt: http://chef.example.com/install_chef_script.sh
       lxd: http://chef.example.com/install_chef_script_for_lxd.sh
-
-# To configure LXD remote
-# lxc remote add host_name host_fqdn --accept-certificate
-# i.e) lxc remote add lxd lxd.example.com --accept-certificate
-#
-# To make sure libvirt connection via ssh available
-# ssh-keygen -t rsa
-# ssh-copy-id WHOAMI@kvm.example.com
-# i.e) ssh-copy-id ubuntu@kvm.example.com

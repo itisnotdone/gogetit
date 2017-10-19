@@ -11,7 +11,7 @@ module Gogetit
     def initialize(conf, maas, logger)
       @config = conf
       @conn = Hyperkit::Client.new(
-          api_endpoint: config[:lxd][:url],
+          api_endpoint: config[:lxd][:nodes][0][:url],
           verify_ssl: false
         )
       @maas = maas
