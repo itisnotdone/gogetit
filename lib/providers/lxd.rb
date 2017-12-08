@@ -290,7 +290,12 @@ module Gogetit
       args = generate_network_config(args, options)
       args = generate_devices(args, options)
 
-      args[:alias] ||= config[:lxd][:default_alias]
+      if options['alias'].nil? or options['alias'].empty?
+        args[:alias] = config[:lxd][:default_alias]
+      else
+        args[:alias] = options['alias']
+      end
+
       args[:sync] ||= true
 
       conn.create_container(name, args)
@@ -316,11 +321,18 @@ module Gogetit
       wait_until_available(ip_or_fqdn, logger)
       logger.info("#{name} has been created.")
 
-      config[:default][:user] ||= ENV['USER']
-      if options['no-maas']
-        puts "ssh #{config[:default][:user]}@#{options['ip_to_access']}"
+      if conn.execute_command(name, "ls /etc/lsb-release")[:metadata][:return] == 0
+        default_user = 'ubuntu'
+      elsif conn.execute_command(name, "ls /etc/redhat-release")[:metadata][:return] == 0
+        default_user = 'centos'
       else
-        puts "ssh #{config[:default][:user]}@#{name}"
+        default_user = config[:default][:user]
+      end
+
+      if options['no-maas']
+        puts "ssh #{default_user}@#{options['ip_to_access']}"
+      else
+        puts "ssh #{default_user}@#{name}"
       end
 
       true

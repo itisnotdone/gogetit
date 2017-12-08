@@ -19,6 +19,8 @@ module Gogetit
     desc 'create NAME', 'Create either a container or KVM domain.'
     method_option :provider, :aliases => '-p', :type => :string, \
       :default => 'lxd', :desc => 'A provider such as lxd and libvirt'
+    method_option :alias, :aliases => '-a', :type => :string, \
+      :default => '', :desc => 'An alias name for a lxd image'
     method_option :chef, :aliases => '-c', :type => :boolean, \
       :default => false, :desc => 'Chef awareness'
     method_option :vlans, :aliases => '-v', :type => :array, \
