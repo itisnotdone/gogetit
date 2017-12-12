@@ -63,6 +63,10 @@ gogetit create kvm01 -p lxd -a centos7
 # When specifying distro for Libvirt provider
 gogetit create kvm01 -p libvirt -d centos
 
+# When deploying on an existing machine(only for libvirt provider)
+gogetit deploy kvm01
+gogetit deploy kvm01 -d centos
+
 # to create a LXD container without MAAS awareness
 gogetit create lxd01 --no-maas -f lxd_without_maas.yml
 gogetit create lxd01 --no-maas -f lxd_without_maas_vlans.yml

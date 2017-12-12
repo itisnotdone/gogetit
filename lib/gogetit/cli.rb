@@ -30,9 +30,9 @@ module Gogetit
     method_option :ipaddresses, :aliases => '-i', :type => :array, \
       :desc => 'A list of static IPs to assign'
     method_option :"no-maas", :type => :boolean, \
-      :desc => 'Without MAAS awareness'
+      :desc => 'Without MAAS awareness(only for LXD provider)'
     method_option :"file", :aliases => '-f', :type => :string, \
-      :desc => 'File location'
+      :desc => 'File location(only for LXD provider)'
     def create(name)
       abort("'vlans' and 'ipaddresses' can not be set together.") \
         if options['vlans'] and options['ipaddresses']
@@ -83,6 +83,21 @@ module Gogetit
       # post-tasks
       if options['chef']
         knife_remove(name, Gogetit.logger) if options[:chef]
+        update_databags(Gogetit.config, Gogetit.logger)
+      end
+    end
+
+    desc 'deploy NAME', 'Deploy a node existing in MAAS.'
+    method_option :distro, :aliases => '-d', :type => :string, \
+      :desc => 'A distro name with its series for libvirt provider'
+    method_option :chef, :aliases => '-c', :type => :boolean, \
+      :default => false, :desc => 'Chef awareness'
+    def deploy(name)
+      Gogetit.libvirt.deploy(name, options.to_hash)
+
+      # post-tasks
+      if options['chef']
+        knife_bootstrap(name, options[:provider], Gogetit.config, Gogetit.logger)
         update_databags(Gogetit.config, Gogetit.logger)
       end
     end

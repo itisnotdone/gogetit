@@ -42,6 +42,11 @@ module Gogetit
         .value
     end
 
+    def get_domain_xml(domain_name)
+      logger.info("Calling <#{__method__.to_s}>")
+       Oga.parse_xml(conn.lookup_domain_by_name(domain_name).xml_desc)
+    end
+
     def generate_nics(ifaces, domain)
       abort("There is no dns server specified for the gateway network.") \
         unless ifaces[0]['dns_servers'][0]
@@ -85,13 +90,64 @@ module Gogetit
       return domain
     end
 
-    # subject.create(name: 'test01')
+    def configure_interfaces(ifaces, system_id)
+
+      # It assumes you only have a physical interfaces.
+      interfaces = maas.interfaces([system_id])
+
+      maas.interfaces(
+        [system_id, interfaces[0]['id']],
+        {
+          'op' => 'unlink_subnet',
+          'id' => interfaces[0]['links'][0]['id']
+        }
+      )
+
+      # VLAN configuration
+      ifaces.each_with_index do |iface,index|
+        if index == 0
+          params = {
+            'op' => 'link_subnet',
+            'mode' => 'STATIC',
+            'subnet' => ifaces[0]['id'],
+            'ip_address' => ifaces[0]['ip'],
+            'default_gateway' => 'True',
+            'force' => 'False'
+          }
+          maas.interfaces([system_id, interfaces[0]['id']], params)
+
+        elsif index > 0
+          params = {
+            'op' => 'create_vlan',
+            'vlan' => iface['vlan']['id'],
+            'parent' => interfaces[0]['id']
+          }
+          maas.interfaces([system_id], params)
+
+          interfaces = maas.interfaces([system_id])
+
+          params = {
+            'op' => 'link_subnet',
+            'mode' => 'STATIC',
+            'subnet' => ifaces[index]['id'],
+            'ip_address' => ifaces[index]['ip'],
+            'default_gateway' => 'False',
+            'force' => 'False'
+          }
+
+          maas.interfaces([system_id, interfaces[index]['id']], params)
+        end
+      end
+    end
+
     def create(name, options = nil)
       logger.info("Calling <#{__method__.to_s}>")
       abort("Domain #{name} already exists! Please check both on MAAS and libvirt.") \
         if maas.domain_name_exists?(name) or domain_exists?(name)
 
       domain = config[:libvirt][:specs][:default]
+      ifaces = nil
+
       if options['ipaddresses']
         ifaces = check_ip_available(options['ipaddresses'], maas, logger)
         domain = generate_nics(ifaces, domain)
@@ -115,58 +171,8 @@ module Gogetit
       system_id = maas.get_system_id(domain[:name])
       maas.wait_until_state(system_id, 'Ready')
 
-      # To configure interfaces
       if options['ipaddresses']
-
-        # It assumes you only have a physical interfaces.
-        interfaces = maas.interfaces([system_id])
-
-        maas.interfaces(
-          [system_id, interfaces[0]['id']],
-          {
-            'op' => 'unlink_subnet',
-            'id' => interfaces[0]['links'][0]['id']
-          }
-        )
-
-        # VLAN configuration
-        ifaces.each_with_index do |iface,index|
-
-          if index == 0
-            params = {
-              'op' => 'link_subnet',
-              'mode' => 'STATIC',
-              'subnet' => ifaces[0]['id'],
-              'ip_address' => ifaces[0]['ip'],
-              'default_gateway' => 'True',
-              'force' => 'False'
-            }
-            maas.interfaces([system_id, interfaces[0]['id']], params)
-
-          elsif index > 0
-            params = {
-              'op' => 'create_vlan',
-              'vlan' => iface['vlan']['id'],
-              'parent' => interfaces[0]['id']
-            }
-            maas.interfaces([system_id], params)
-
-            interfaces = maas.interfaces([system_id])
-
-            params = {
-              'op' => 'link_subnet',
-              'mode' => 'STATIC',
-              'subnet' => ifaces[index]['id'],
-              'ip_address' => ifaces[index]['ip'],
-              'default_gateway' => 'False',
-              'force' => 'False'
-            }
-
-            maas.interfaces([system_id, interfaces[index]['id']], params)
-          end
-
-        end
-
+        configure_interfaces(ifaces, system_id)
       elsif options['vlans']
         #check_vlan_available(options['vlans'])
       else
@@ -195,7 +201,7 @@ module Gogetit
           'sudo systemctl enable serial-getty@ttyS0.service',
           'sudo systemctl start serial-getty@ttyS0.service'
         ]
-        run_through_ssh(fqdn, commands, distro_name, logger)
+        run_through_ssh(fqdn, distro_name, commands, logger)
       end
 
       logger.info("#{domain[:name]} has been created.")
@@ -235,6 +241,45 @@ module Gogetit
 
       maas.refresh_pods
       logger.info("#{name} has been destroyed.")
+      true
+    end
+
+    def deploy(name, options = nil)
+      logger.info("Calling <#{__method__.to_s}>")
+      abort("The machine, '#{name}', doesn't exist.") \
+        unless maas.machine_exists?(name)
+
+      system_id = maas.get_system_id(name)
+      maas.wait_until_state(system_id, 'Ready')
+
+      logger.info("Calling to deploy...")
+
+      distro = nil
+      if options['distro'].nil? or options['distro'].empty?
+        distro = 'xenial'
+      else
+        distro = options['distro']
+      end
+
+      maas.conn.request(:post, ['machines', system_id], \
+                        {'op' => 'deploy', 'distro_series' => distro})
+      maas.wait_until_state(system_id, 'Deployed')
+
+      fqdn = name + '.' + maas.get_domain
+      distro_name = maas.get_distro_name(system_id)
+      wait_until_available(fqdn, distro_name, logger)
+
+      # To enable serial console to use 'virsh console'
+      if distro_name == 'ubuntu'
+        commands = [
+          'sudo systemctl enable serial-getty@ttyS0.service',
+          'sudo systemctl start serial-getty@ttyS0.service'
+        ]
+        run_through_ssh(fqdn, distro_name, commands, logger)
+      end
+
+      logger.info("#{name} has been created.")
+      puts "ssh #{distro_name}@#{name}"
       true
     end
 
