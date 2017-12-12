@@ -141,7 +141,7 @@ module Gogetit
 		  end
 		end
 
-    def wait_until_available(ip_or_fqdn, logger)
+    def wait_until_available(ip_or_fqdn, distro_name, logger)
       logger.info("Calling <#{__method__.to_s}>")
       until ping_available?(ip_or_fqdn, logger)
         logger.info("Calling <#{__method__.to_s}> for ping to be ready..")
@@ -149,7 +149,7 @@ module Gogetit
       end
       logger.info("#{ip_or_fqdn} is now available to ping..")
 
-      until ssh_available?(ip_or_fqdn, 'ubuntu', logger)
+      until ssh_available?(ip_or_fqdn, distro_name, logger)
         logger.info("Calling <#{__method__.to_s}> for ssh to be ready..")
         sleep 3
       end
@@ -185,9 +185,9 @@ module Gogetit
       return ifaces
     end
 
-    def run_through_ssh(host, commands, logger)
+    def run_through_ssh(host, distro_name, commands, logger)
       logger.info("Calling <#{__method__.to_s}>")
-      Net::SSH.start(host, 'ubuntu') do |ssh|
+      Net::SSH.start(host, distro_name) do |ssh|
         commands.each do |cmd|
           logger.info("'#{cmd}' is being executed..")
           output = ssh.exec!(cmd)

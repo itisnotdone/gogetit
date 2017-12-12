@@ -20,7 +20,9 @@ module Gogetit
     method_option :provider, :aliases => '-p', :type => :string, \
       :default => 'lxd', :desc => 'A provider such as lxd and libvirt'
     method_option :alias, :aliases => '-a', :type => :string, \
-      :default => '', :desc => 'An alias name for a lxd image'
+      :desc => 'An alias name for a lxd image'
+    method_option :distro, :aliases => '-d', :type => :string, \
+      :desc => 'A distro name with its series for libvirt provider'
     method_option :chef, :aliases => '-c', :type => :boolean, \
       :default => false, :desc => 'Chef awareness'
     method_option :vlans, :aliases => '-v', :type => :array, \
@@ -41,6 +43,12 @@ module Gogetit
       abort("'no-maas' and 'file' have to be set together.") \
         if options['no-maas'] ^ !!options['file']
 
+      abort("'distro' has to be set with libvirt provider.") \
+        if options['distro'] and options['provider'] == 'lxd'
+
+      abort("'alias' has to be set with lxd provider.") \
+        if options['alias'] and options['provider'] == 'libvirt'
+
       case options['provider']
       when 'lxd'
         Gogetit.lxd.create(name, options.to_hash)
@@ -57,7 +65,7 @@ module Gogetit
       end
     end
 
-    desc 'destroy NAME', 'Destroy either a container or KVM domain.'
+    desc 'destroy NAME', 'Destroy either a container or KVM instance.'
     method_option :chef, :type => :boolean, :desc => "Enable chef awareness."
     def destroy(name)
       # Let Gogetit recognize the provider.
@@ -68,6 +76,28 @@ module Gogetit
           Gogetit.lxd.destroy(name)
         when 'libvirt'
           Gogetit.libvirt.destroy(name)
+        else
+          abort('Invalid argument entered.')
+        end
+      end
+      # post-tasks
+      if options['chef']
+        knife_remove(name, Gogetit.logger) if options[:chef]
+        update_databags(Gogetit.config, Gogetit.logger)
+      end
+    end
+
+    desc 'release NAME', 'Release a node in MAAS'
+    method_option :chef, :type => :boolean, :desc => "Enable chef awareness."
+    def release(name)
+      # Let Gogetit recognize the provider.
+      provider = Gogetit.get_provider_of(name)
+      if provider
+        case provider
+        when 'lxd'
+          abort('This method is not available for LXD container.')
+        when 'libvirt'
+          Gogetit.libvirt.release(name)
         else
           abort('Invalid argument entered.')
         end

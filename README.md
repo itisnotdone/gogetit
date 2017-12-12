@@ -56,6 +56,13 @@ gogetit create lxd01 -p lxd -i 192.168.10.10 10.0.0.2
 gogetit create kvm01 -p libvirt
 gogetit create kvm01 -p libvirt -i 192.168.10.10 10.0.0.2
 
+# When specifying alias for LXD provider
+gogetit create kvm01 -a centos7
+gogetit create kvm01 -p lxd -a centos7
+
+# When specifying distro for Libvirt provider
+gogetit create kvm01 -p libvirt -d centos
+
 # to create a LXD container without MAAS awareness
 gogetit create lxd01 --no-maas -f lxd_without_maas.yml
 gogetit create lxd01 --no-maas -f lxd_without_maas_vlans.yml
@@ -78,6 +85,9 @@ CHEF=true gogetit create chef01
 
 # to destroy a container deleting corresponding chef node and client
 gogetit destroy chef01 --chef
+
+# to release a machine(or instance created by libvirt) in MAAS
+gogetit release node01
 ```
 
 ```ruby

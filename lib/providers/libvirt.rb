@@ -95,8 +95,8 @@ module Gogetit
       if options['ipaddresses']
         ifaces = check_ip_available(options['ipaddresses'], maas, logger)
         domain = generate_nics(ifaces, domain)
-      elsif options[:vlans]
-        #check_vlan_available(options[:vlans])
+      elsif options['vlans']
+        #check_vlan_available(options['vlans'])
       else
         domain[:nic] = [
           {
@@ -167,26 +167,39 @@ module Gogetit
 
         end
 
-      elsif options[:vlans]
-        #check_vlan_available(options[:vlans])
+      elsif options['vlans']
+        #check_vlan_available(options['vlans'])
       else
       end
 
       logger.info("Calling to deploy...")
-      maas.conn.request(:post, ['machines', system_id], {'op' => 'deploy'})
+
+      distro = nil
+      if options['distro'].nil? or options['distro'].empty?
+        distro = 'xenial'
+      else
+        distro = options['distro']
+      end
+
+      maas.conn.request(:post, ['machines', system_id], \
+                        {'op' => 'deploy', 'distro_series' => distro})
       maas.wait_until_state(system_id, 'Deployed')
 
       fqdn = name + '.' + maas.get_domain
-      wait_until_available(fqdn, logger)
+      distro_name = maas.get_distro_name(system_id)
+      wait_until_available(fqdn, distro_name, logger)
 
       # To enable serial console to use 'virsh console'
-      commands = [
-        'sudo systemctl enable serial-getty@ttyS0.service',
-        'sudo systemctl start serial-getty@ttyS0.service'
-      ]
-      run_through_ssh(fqdn, commands, logger)
+      if distro_name == 'ubuntu'
+        commands = [
+          'sudo systemctl enable serial-getty@ttyS0.service',
+          'sudo systemctl start serial-getty@ttyS0.service'
+        ]
+        run_through_ssh(fqdn, commands, distro_name, logger)
+      end
 
       logger.info("#{domain[:name]} has been created.")
+      puts "ssh #{distro_name}@#{name}"
       true
     end
 
@@ -222,6 +235,22 @@ module Gogetit
 
       maas.refresh_pods
       logger.info("#{name} has been destroyed.")
+      true
+    end
+
+    def release(name)
+      logger.info("Calling <#{__method__.to_s}>")
+      system_id = maas.get_system_id(name)
+      if maas.machine_exists?(name)
+        if maas.get_machine_state(system_id) == 'Deployed'
+          logger.info("Calling to release...")
+          maas.conn.request(:post, ['machines', system_id], {'op' => 'release'})
+          maas.wait_until_state(system_id, 'Ready')
+        end
+      end
+
+      maas.refresh_pods
+      logger.info("#{name} has been released.")
       true
     end
 

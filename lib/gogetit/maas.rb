@@ -28,6 +28,14 @@ module Gogetit
       false
     end
 
+    def get_distro_name(system_id)
+      logger.info("Calling <#{__method__.to_s}>")
+      conn.request(:get, ['machines']).each do |m|
+        return m['osystem'] if m['system_id'] == system_id
+      end
+      false
+    end
+
     def dnsresource_exists?(name)
       logger.info("Calling <#{__method__.to_s}>")
       conn.request(:get, ['dnsresources']).each do |item|
@@ -201,6 +209,7 @@ module Gogetit
       until conn.request(:get, ['machines', system_id])['status_name'] == state
         sleep 3
       end
+      logger.info("The status has become '#{state}'.")
     end
 
     def get_machine_state(system_id)

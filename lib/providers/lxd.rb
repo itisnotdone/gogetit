@@ -318,9 +318,6 @@ module Gogetit
         ip_or_fqdn = name + '.' + maas.get_domain
       end
 
-      wait_until_available(ip_or_fqdn, logger)
-      logger.info("#{name} has been created.")
-
       if conn.execute_command(name, "ls /etc/lsb-release")[:metadata][:return] == 0
         default_user = 'ubuntu'
       elsif conn.execute_command(name, "ls /etc/redhat-release")[:metadata][:return] == 0
@@ -328,6 +325,9 @@ module Gogetit
       else
         default_user = config[:default][:user]
       end
+
+      wait_until_available(ip_or_fqdn, default_user, logger)
+      logger.info("#{name} has been created.")
 
       if options['no-maas']
         puts "ssh #{default_user}@#{options['ip_to_access']}"
