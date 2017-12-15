@@ -3,9 +3,27 @@ require 'gogetit'
 require 'gogetit/util'
 
 module Gogetit
+
+  @@result = nil
+
+  def self.set_result(x)
+    @@result = x
+  end
+
+  def self.get_result
+    @@result
+  end
+
   class CLI < Thor
     include Gogetit::Util
     package_name 'Gogetit'
+
+    # attr_accessor :result
+
+    # def initialize(*args)
+    #   super
+    #   @result = nil
+    # end
 
     desc 'list', 'List containers and instances, running currently.'
     def list
@@ -51,9 +69,11 @@ module Gogetit
 
       case options['provider']
       when 'lxd'
-        Gogetit.lxd.create(name, options.to_hash)
+        result = Gogetit.lxd.create(name, options.to_hash)
+        Gogetit.set_result(result)
       when 'libvirt'
-        Gogetit.libvirt.create(name, options.to_hash)
+        result = Gogetit.libvirt.create(name, options.to_hash)
+        Gogetit.set_result(result)
       else
         abort('Invalid argument entered.')
       end
@@ -73,9 +93,11 @@ module Gogetit
       if provider
         case provider
         when 'lxd'
-          Gogetit.lxd.destroy(name)
+          result = Gogetit.lxd.destroy(name)
+          Gogetit.set_result(result)
         when 'libvirt'
-          Gogetit.libvirt.destroy(name)
+          result = Gogetit.libvirt.destroy(name)
+          Gogetit.set_result(result)
         else
           abort('Invalid argument entered.')
         end
@@ -93,7 +115,7 @@ module Gogetit
     method_option :chef, :aliases => '-c', :type => :boolean, \
       :default => false, :desc => 'Chef awareness'
     def deploy(name)
-      Gogetit.libvirt.deploy(name, options.to_hash)
+      Gogetit.set_result(Gogetit.libvirt.deploy(name, options.to_hash))
 
       # post-tasks
       if options['chef']
@@ -105,14 +127,35 @@ module Gogetit
     desc 'release NAME', 'Release a node in MAAS'
     method_option :chef, :type => :boolean, :desc => "Enable chef awareness."
     def release(name)
+      result = Gogetit.libvirt.release(name)
+      Gogetit.set_result(result)
+
+      # post-tasks
+      if options['chef']
+        knife_remove(name, Gogetit.logger) if options[:chef]
+        update_databags(Gogetit.config, Gogetit.logger)
+      end
+    end
+
+    desc 'rebuild NAME', 'Destroy(or release) and create(or deploy)'\
+    ' either a container or a node(machine) in MAAS again.'
+    method_option :chef, :aliases => '-c', :type => :boolean, \
+      :default => false, :desc => 'Chef awareness'
+    def rebuild(name)
       # Let Gogetit recognize the provider.
       provider = Gogetit.get_provider_of(name)
       if provider
         case provider
         when 'lxd'
-          abort('This method is not available for LXD container.')
+          invoke :destroy, [name]
+          alias_name = YAML.load(
+            Gogetit.get_result[:info][:config][:"user.user-data"]
+          )['source_image_alias']
+          invoke :create, [name], :alias => alias_name
         when 'libvirt'
-          Gogetit.libvirt.release(name)
+          invoke :release, [name]
+          distro_name = Gogetit.get_result[:info][:machine]['distro_series']
+          invoke :deploy, [name], :distro => distro_name
         else
           abort('Invalid argument entered.')
         end
@@ -123,12 +166,5 @@ module Gogetit
         update_databags(Gogetit.config, Gogetit.logger)
       end
     end
-
-    # This feature is broken and might be deprecated in the future.
-    # desc 'rebuild NAME', 'Destroy and create either a container or KVM domain again.'
-    # def rebuild(type=nil, name)
-    #   invoke :destroy, [name]
-    #   invoke :create, [type, name]
-    # end
   end
 end

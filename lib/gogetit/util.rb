@@ -72,12 +72,14 @@ module Gogetit
           if JSON.parse(File.read(item_file))['vault']
             if items_as_is.include? item
               run_command(
-                "knife vault update #{bag} #{item} --json #{item_file} --search '*:*' -M client",
+                "knife vault update #{bag} #{item} --json #{item_file}"\
+                " --search '*:*' -M client",
                 logger
               )
             else
               run_command(
-                "knife vault create #{bag} #{item} --json #{item_file} --search '*:*' -M client",
+                "knife vault create #{bag} #{item} --json #{item_file}"\
+                " --search '*:*' -M client",
                 logger
               )
             end

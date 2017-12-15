@@ -97,13 +97,6 @@ gogetit release node01
 ```ruby
 require 'gogetit'
 ```
-## To make Gogetit recognize data bag that needs to be encrypted by Vault
-- Fill this out!
-
-## To develop
-- Deploying bare metal machine from machine pool
-- Static IP auto-assignment with VLAN info
-- Working with Multiple LXD and Libvirt hosts
 
 ## To document
 - How to make Gogetit recognize vault data bag items
@@ -116,6 +109,9 @@ Clone and then execute followings:
     $ bundle
 
 Questions, pull requests, advices and suggestions are always welcome!
+
+## rubygems
+[https://rubygems.org/gems/gogetit](https://rubygems.org/gems/gogetit)
 
 ## License
 

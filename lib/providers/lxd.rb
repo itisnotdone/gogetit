@@ -46,7 +46,6 @@ module Gogetit
     def generate_user_data(args, options)
       logger.info("Calling <#{__method__.to_s}>")
 
-      args = {}
       args[:config] = {}
 
       if options['no-maas']
@@ -69,6 +68,7 @@ module Gogetit
         end
 
         args[:config][:"user.user-data"]['maas'] = true
+        args[:config][:"user.user-data"]['source_image_alias'] = args[:alias]
       end
 
       # To disable to update apt database on first boot
@@ -223,7 +223,8 @@ module Gogetit
         default_fabric = 'fabric-0'
 
         maas.get_subnets.each do |subnet|
-          if subnet['vlan']['name'] == 'untagged' and subnet['vlan']['fabric'] == default_fabric
+          if subnet['vlan']['name'] == 'untagged' and \
+              subnet['vlan']['fabric'] == default_fabric
             root_bridge_mtu = subnet['vlan']['mtu']
             break
           end
@@ -286,15 +287,17 @@ module Gogetit
       abort("Domain #{name}.#{maas.get_domain} already exists!") \
         if maas.domain_name_exists?(name) unless options['no-maas']
 
-      args = generate_user_data(args, options)
-      args = generate_network_config(args, options)
-      args = generate_devices(args, options)
+      args = {}
 
       if options['alias'].nil? or options['alias'].empty?
         args[:alias] = config[:lxd][:default_alias]
       else
         args[:alias] = options['alias']
       end
+
+      args = generate_user_data(args, options)
+      args = generate_network_config(args, options)
+      args = generate_devices(args, options)
 
       args[:sync] ||= true
 
@@ -335,7 +338,7 @@ module Gogetit
         puts "ssh #{default_user}@#{name}"
       end
 
-      true
+      { result: true, info: args }
     end
 
     def destroy(name, args = {})
@@ -343,6 +346,8 @@ module Gogetit
 
       container = conn.container(name)
       args[:sync] ||= true
+
+      info = container.to_hash
 
       if get_state(name) == 'Running'
         conn.stop_container(name, args)
@@ -380,7 +385,8 @@ module Gogetit
       # When multiple static IPs were reserved, it will not delete anything
       # since they are deleted when releasing the IPs above.
       logger.info("#{name} has been destroyed.")
-      true
+
+      { result: true, info: info }
     end
   end
 end

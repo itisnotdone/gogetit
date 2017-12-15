@@ -54,7 +54,8 @@ module Gogetit
         unless ifaces[0]['gateway_ip']
 
       # It seems the first IP has to belong to the untagged VLAN in the Fabric.
-      abort("The first IP you entered does not belong to the untagged VLAN in the Fabric.") \
+      abort("The first IP you entered does not belong to the untagged"\
+      " VLAN in the Fabric.") \
         unless ifaces[0]['vlan']['name'] == 'untagged'
 
       domain[:ifaces] = ifaces
@@ -70,7 +71,8 @@ module Gogetit
           elsif iface['vlan']['name'] != 'untagged'
             nic = {
               network: config[:default][:root_bridge],
-              portgroup: config[:default][:root_bridge] + '-' + iface['vlan']['vid'].to_s
+              portgroup: config[:default][:root_bridge] + '-' + \
+              iface['vlan']['vid'].to_s
             }
           end
           domain[:nic].push(nic)
@@ -81,7 +83,8 @@ module Gogetit
           if ifaces[0]['vlan']['name'] != 'untagged'
             nic = {
               network: config[:default][:root_bridge],
-              portgroup: config[:default][:root_bridge] + '-' + iface['vlan']['vid'].to_s
+              portgroup: config[:default][:root_bridge] + '-' + \
+              iface['vlan']['vid'].to_s
             }
             domain[:nic].push(nic)
           end
@@ -142,7 +145,8 @@ module Gogetit
 
     def create(name, options = nil)
       logger.info("Calling <#{__method__.to_s}>")
-      abort("Domain #{name} already exists! Please check both on MAAS and libvirt.") \
+      abort("Domain #{name} already exists!"\
+      " Please check both on MAAS and libvirt.") \
         if maas.domain_name_exists?(name) or domain_exists?(name)
 
       domain = config[:libvirt][:specs][:default]
@@ -206,12 +210,19 @@ module Gogetit
 
       logger.info("#{domain[:name]} has been created.")
       puts "ssh #{distro_name}@#{name}"
-      true
+
+      { result: true, info: domain }
     end
 
     def destroy(name)
       logger.info("Calling <#{__method__.to_s}>")
+
       system_id = maas.get_system_id(name)
+
+      info = {}
+      info[:machine] = \
+        maas.conn.request(:get, ['machines', system_id])
+
       if maas.machine_exists?(name)
         if maas.get_machine_state(system_id) == 'Deployed'
           logger.info("Calling to release...")
@@ -227,11 +238,14 @@ module Gogetit
       end
 
       dom = conn.lookup_domain_by_name(name)
+      info[:domain_xml] = dom.xml_desc
+
       dom.destroy if dom.active?
       Oga.parse_xml(dom.xml_desc).xpath('domain/devices/disk/source').each do |d|
         pool_path = d.attribute('file').value.split('/')[0..2].join('/')
         pools.each do |p|
-          if Oga.parse_xml(p.xml_desc).at_xpath('pool/target/path').inner_text == pool_path
+          if Oga.parse_xml(p.xml_desc).at_xpath('pool/target/path')\
+            .inner_text == pool_path
             logger.info("Deleting volume in #{p.name} pool.")
             p.lookup_volume_by_name(d.attribute('file').value.split('/')[3]).delete
           end
@@ -239,9 +253,9 @@ module Gogetit
       end
       dom.undefine
 
-      maas.refresh_pods
       logger.info("#{name} has been destroyed.")
-      true
+
+      { result: true, info: info }
     end
 
     def deploy(name, options = nil)
@@ -280,12 +294,18 @@ module Gogetit
 
       logger.info("#{name} has been created.")
       puts "ssh #{distro_name}@#{name}"
-      true
+      { result: true, info: distro }
     end
 
     def release(name)
       logger.info("Calling <#{__method__.to_s}>")
+
       system_id = maas.get_system_id(name)
+
+      info = {}
+      info[:machine] = \
+        maas.conn.request(:get, ['machines', system_id])
+
       if maas.machine_exists?(name)
         if maas.get_machine_state(system_id) == 'Deployed'
           logger.info("Calling to release...")
@@ -294,9 +314,9 @@ module Gogetit
         end
       end
 
-      maas.refresh_pods
       logger.info("#{name} has been released.")
-      true
+
+      { result: true, info: info }
     end
 
     def define_domain(domain)
@@ -368,9 +388,11 @@ module Gogetit
 
       volume_doc.at_xpath('volume/name').inner_text = volume_name
       volume_doc.at_xpath('volume/target/path').inner_text = volume_file
-      volume_doc.at_xpath('volume/capacity').inner_text = domain[:disk][:root][:capacity].to_s
+      volume_doc.at_xpath('volume/capacity').inner_text = \
+        domain[:disk][:root][:capacity].to_s
 
-      create_volume(domain[:disk][:root][:pool], Oga::XML::Generator.new(volume_doc).to_xml)
+      create_volume(domain[:disk][:root][:pool], \
+                    Oga::XML::Generator.new(volume_doc).to_xml)
       defined_volumes << volume_doc
 
       # For data(secondary) volumes
