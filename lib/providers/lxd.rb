@@ -32,6 +32,7 @@ module Gogetit
     end
 
     def get_state(name)
+      logger.info("Calling <#{__method__.to_s}>")
       conn.container(name)[:status]
     end
 
@@ -74,6 +75,11 @@ module Gogetit
       # To disable to update apt database on first boot
       # so chef client can keep doing its job.
       args[:config][:'user.user-data']['package_update'] = false
+      args[:config][:'user.user-data']['package_upgrade'] = false
+
+      if config[:'cloud-init'][:ca_public_key_url]
+        args[:config][:'user.user-data'][''] = \
+          get_http_content(config[:'cloud-init'][:ca_public_key_url])
 
       args[:config][:"user.user-data"] = \
         "#cloud-config\n" + YAML.dump(args[:config][:"user.user-data"])[4..-1]
@@ -173,6 +179,7 @@ module Gogetit
 
     # To configure devices
     def generate_devices(args, options)
+      logger.info("Calling <#{__method__.to_s}>")
       args[:devices] = {}
 
       if options['no-maas']
@@ -244,6 +251,7 @@ module Gogetit
     end
 
     def reserve_ips(name, options, container)
+      logger.info("Calling <#{__method__.to_s}>")
       # Generate params to reserve IPs
       options[:ifaces].each_with_index do |iface,index|
         if index == 0

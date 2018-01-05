@@ -1,5 +1,6 @@
 require 'mkmf'
 require 'net/ssh'
+require 'net/http'
 require 'active_support/core_ext/hash'
 require 'json'
 
@@ -8,6 +9,19 @@ module Gogetit
     def run_command(cmd, logger)
       logger.info("Calling <#{__method__.to_s}> to run #{cmd}")
       system(cmd)
+    end
+
+    def get_http_content(url)
+      logger.info("Calling <#{__method__.to_s}> to get #{url}")
+      uri = URI.parse(url)
+      http = Net::HTTP.new(uri.host, uri.port)
+      res = http.request_post(uri.path, nil)
+      if res.code == "200"
+        res.body
+      else
+        logger.info("Unable to reach #{url}.")
+        nil
+      end
     end
 
     def knife_bootstrap(name, provider, config, logger)

@@ -2,6 +2,9 @@ default:
   user: ubuntu
   root_bridge: $root_bridge
 
+cloud-init:
+  ca_public_key_url: http://pki.example.com/site/ssh_ca.pub
+
 maas:
   key: K:E:Y
   url: http://maas.example.com/MAAS/api/2.0
