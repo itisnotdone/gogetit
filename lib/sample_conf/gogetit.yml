@@ -2,8 +2,14 @@ default:
   user: ubuntu
   root_bridge: $root_bridge
 
-cloud-init:
-  ca_public_key_url: http://pki.example.com/site/ssh_ca.pub
+#cloud-init
+cloud-config:
+  write_files:
+    - ca_public_key_url: http://pki.example.com/site/ssh_ca.pub
+      path: /etc/ssh/ca.pub
+  ca-certs:
+    trusted:
+      - http://pki.example.com/site/root_ca.crt
 
 maas:
   key: K:E:Y

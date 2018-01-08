@@ -77,9 +77,20 @@ module Gogetit
       args[:config][:'user.user-data']['package_update'] = false
       args[:config][:'user.user-data']['package_upgrade'] = false
 
-      if config[:'cloud-init'][:ca_public_key_url]
-        args[:config][:'user.user-data'][''] = \
-          get_http_content(config[:'cloud-init'][:ca_public_key_url])
+      # To add truested root CA certificates
+      if config[:'cloud-config'] && config[:'cloud-config'][:'ca-certs']
+        args[:config][:'user.user-data']['ca-certs'] = {}
+        certs = []
+
+        config[:'cloud-config'][:'ca-certs'][:trusted].each do |ca|
+          content = get_http_content(ca)
+          certs.push(
+            /^-----BEGIN CERTIFICATE-----.*-/m.match(content).to_s
+          ) if content
+        end
+
+        args[:config][:'user.user-data']['ca-certs'] = { 'trusted' => certs }
+      end
 
       args[:config][:"user.user-data"] = \
         "#cloud-config\n" + YAML.dump(args[:config][:"user.user-data"])[4..-1]
