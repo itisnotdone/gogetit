@@ -1,6 +1,7 @@
 require 'hyperkit'
 require 'gogetit/util'
 require 'yaml'
+require 'hashie'
 
 module Gogetit
   class GogetLXD
@@ -77,12 +78,24 @@ module Gogetit
       args[:config][:'user.user-data']['package_update'] = false
       args[:config][:'user.user-data']['package_upgrade'] = false
 
+      generate_cloud_init_config(config, args)
+
+      args[:config][:"user.user-data"] = \
+        "#cloud-config\n" + YAML.dump(args[:config][:"user.user-data"])[4..-1]
+
+      return args
+    end
+
+    def generate_cloud_init_config(config, args)
+      logger.info("Calling <#{__method__.to_s}>")
       # To add truested root CA certificates
-      if config[:'cloud-config'] && config[:'cloud-config'][:'ca-certs']
+      # https://cloudinit.readthedocs.io/en/latest/topics/examples.html
+      # #configure-an-instances-trusted-ca-certificates
+      if config[:cloud_init] && config[:cloud_init][:ca_certs]
         args[:config][:'user.user-data']['ca-certs'] = {}
         certs = []
 
-        config[:'cloud-config'][:'ca-certs'][:trusted].each do |ca|
+        config[:cloud_init][:ca_certs].each do |ca|
           content = get_http_content(ca)
           certs.push(
             /^-----BEGIN CERTIFICATE-----.*-/m.match(content).to_s
@@ -92,8 +105,55 @@ module Gogetit
         args[:config][:'user.user-data']['ca-certs'] = { 'trusted' => certs }
       end
 
-      args[:config][:"user.user-data"] = \
-        "#cloud-config\n" + YAML.dump(args[:config][:"user.user-data"])[4..-1]
+      # To get CA public key to be used for SSH authentication
+      # https://cloudinit.readthedocs.io/en/latest/topics/examples.html
+      # #writing-out-arbitrary-files
+      if config[:cloud_init] && config[:cloud_init][:ssh_ca_public_key]
+        args[:config][:'user.user-data']['write_files'] = []
+        content = get_http_content(config[:cloud_init][:ssh_ca_public_key][:key_url])
+        if content
+          file = {
+            'content'     => content.chop!,
+            'path'        => config[:cloud_init][:ssh_ca_public_key][:key_path],
+            'owner'       => config[:cloud_init][:ssh_ca_public_key][:owner],
+            'permissions' => config[:cloud_init][:ssh_ca_public_key][:permissions]
+          }
+          args[:config][:'user.user-data']['write_files'].push(file)
+          args[:config][:'user.user-data']['bootcmd'] = []
+          args[:config][:'user.user-data']['bootcmd'].push(
+            "cloud-init-per once ssh-ca-pub-key \
+echo \"TrustedUserCAKeys #{file['path']}\" >> /etc/ssh/sshd_config"
+          )
+        end
+
+        if config[:cloud_init][:ssh_ca_public_key][:revocation_url]
+          content = get_http_content(config[:cloud_init][:ssh_ca_public_key][:revocation_url])
+          if content
+            args[:config][:'user.user-data']['bootcmd'].push(
+              "cloud-init-per once download-key-revocation-list \
+curl -o #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]} \
+#{config[:cloud_init][:ssh_ca_public_key][:revocation_url]}"
+            )
+            args[:config][:'user.user-data']['bootcmd'].push(
+              "cloud-init-per once ssh-user-key-revocation-list \
+echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\" \
+>> /etc/ssh/sshd_config"
+            )
+          end
+        end
+      end
+
+      # To add users
+      # https://cloudinit.readthedocs.io/en/latest/topics/examples.html
+      # #including-users-and-groups
+      if config[:cloud_init] && config[:cloud_init][:users]
+        args[:config][:'user.user-data']['users'] = []
+        args[:config][:'user.user-data']['users'].push('default')
+
+        config[:cloud_init][:users].each do |user|
+          args[:config][:'user.user-data']['users'].push(Hashie.stringify_keys user)
+        end
+      end
 
       return args
     end

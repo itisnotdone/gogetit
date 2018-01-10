@@ -144,19 +144,6 @@ module Gogetit
       end
     end
 
-    # taken from https://gist.github.com/andrewpcone/11359798
-		def symbolize_keys(thing)
-		  case thing
-		  when Array
-		    thing.map{|v| symbolize_keys(v)}
-		  when Hash
-		    inj = thing.inject({}) {|h, (k,v)| h[k] = symbolize_keys(v); h}
-		    inj.symbolize_keys
-		  else
-		    thing
-		  end
-		end
-
     def wait_until_available(ip_or_fqdn, distro_name, logger)
       logger.info("Calling <#{__method__.to_s}>")
       until ping_available?(ip_or_fqdn, logger)

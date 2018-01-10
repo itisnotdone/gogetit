@@ -2,6 +2,7 @@ require 'yaml'
 require 'logger'
 require 'gogetit/util'
 require 'gogetit/multilogger'
+require 'hashie'
 
 module Gogetit
   module Config
@@ -60,6 +61,6 @@ module Gogetit
       FileUtils.cp(src, dst)
       abort('Please define default configuration for GoGetIt at ~/.gogetit/gogetit.yml.')
     end
-    config.merge!(symbolize_keys(YAML.load_file(conf_file)))
+    config.merge!(Hashie.symbolize_keys YAML.load_file(conf_file))
   end
 end

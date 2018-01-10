@@ -2,14 +2,23 @@ default:
   user: ubuntu
   root_bridge: $root_bridge
 
-#cloud-init
-cloud-config:
-  write_files:
-    - ca_public_key_url: http://pki.example.com/site/ssh_ca.pub
-      path: /etc/ssh/ca.pub
-  ca-certs:
-    trusted:
-      - http://pki.example.com/site/root_ca.crt
+cloud_init:
+  users:
+    - name: usera
+      gecos: usera
+      sudo: ALL=(ALL) NOPASSWD:ALL
+      groups: users, admin
+      shell: /bin/bash
+      lock_passwd: true
+  ca_certs:
+    - http://pki.example.com/site/root_ca.crt
+  ssh_ca_public_key:
+    key_url: http://pki.example.com/site/ssh_ca.pub
+    key_path: /etc/ssh/ca.pub
+    revocation_url: http://pki.example.com/site/ssh-revoked-keys
+    revocation_path: /etc/ssh/ca.pub
+    owner: root:root
+    permissions: '0640'
 
 maas:
   key: K:E:Y
