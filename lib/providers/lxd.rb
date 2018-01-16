@@ -408,6 +408,8 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
         default_user = config[:default][:user]
       end
 
+      args[:default_user] = default_user
+
       wait_until_available(ip_or_fqdn, default_user, logger)
       logger.info("#{name} has been created.")
 

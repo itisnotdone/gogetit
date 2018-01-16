@@ -211,6 +211,8 @@ module Gogetit
       logger.info("#{domain[:name]} has been created.")
       puts "ssh #{distro_name}@#{name}"
 
+      domain[:default_user] = distro_name
+
       { result: true, info: domain }
     end
 
@@ -294,6 +296,9 @@ module Gogetit
 
       logger.info("#{name} has been created.")
       puts "ssh #{distro_name}@#{name}"
+
+      distro[:default_user] = distro_name
+
       { result: true, info: distro }
     end
 
