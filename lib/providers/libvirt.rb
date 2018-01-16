@@ -153,7 +153,7 @@ module Gogetit
       ifaces = nil
 
       if options['ipaddresses']
-        ifaces = check_ip_available(options['ipaddresses'], maas, logger)
+        ifaces = check_ip_available(options['ipaddresses'], maas)
         domain = generate_nics(ifaces, domain)
       elsif options['vlans']
         #check_vlan_available(options['vlans'])
@@ -197,7 +197,7 @@ module Gogetit
 
       fqdn = name + '.' + maas.get_domain
       distro_name = maas.get_distro_name(system_id)
-      wait_until_available(fqdn, distro_name, logger)
+      wait_until_available(fqdn, distro_name)
 
       # To enable serial console to use 'virsh console'
       if distro_name == 'ubuntu'
@@ -205,7 +205,7 @@ module Gogetit
           'sudo systemctl enable serial-getty@ttyS0.service',
           'sudo systemctl start serial-getty@ttyS0.service'
         ]
-        run_through_ssh(fqdn, distro_name, commands, logger)
+        run_through_ssh(fqdn, distro_name, commands)
       end
 
       logger.info("#{domain[:name]} has been created.")
@@ -283,7 +283,7 @@ module Gogetit
 
       fqdn = name + '.' + maas.get_domain
       distro_name = maas.get_distro_name(system_id)
-      wait_until_available(fqdn, distro_name, logger)
+      wait_until_available(fqdn, distro_name)
 
       # To enable serial console to use 'virsh console'
       if distro_name == 'ubuntu'
@@ -291,15 +291,17 @@ module Gogetit
           'sudo systemctl enable serial-getty@ttyS0.service',
           'sudo systemctl start serial-getty@ttyS0.service'
         ]
-        run_through_ssh(fqdn, distro_name, commands, logger)
+        run_through_ssh(fqdn, distro_name, commands)
       end
 
       logger.info("#{name} has been created.")
       puts "ssh #{distro_name}@#{name}"
 
-      distro[:default_user] = distro_name
+      info = {}
+      info[:distro] = distro
+      info[:default_user] = distro_name
 
-      { result: true, info: distro }
+      { result: true, info: info }
     end
 
     def release(name)

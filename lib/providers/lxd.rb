@@ -171,7 +171,7 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
           YAML.dump(args[:config][:"user.network-config"])[4..-1]
 
       elsif options['ipaddresses']
-        options[:ifaces] = check_ip_available(options['ipaddresses'], maas, logger)
+        options[:ifaces] = check_ip_available(options['ipaddresses'], maas)
         abort("There is no dns server specified for the gateway network.") \
           unless options[:ifaces][0]['dns_servers'][0]
         abort("There is no gateway specified for the gateway network.") \
@@ -410,7 +410,7 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
 
       args[:default_user] = default_user
 
-      wait_until_available(ip_or_fqdn, default_user, logger)
+      wait_until_available(ip_or_fqdn, default_user)
       logger.info("#{name} has been created.")
 
       if options['no-maas']

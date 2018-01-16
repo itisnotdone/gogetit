@@ -8,12 +8,13 @@ require 'timeout'
 
 module Gogetit
   module Util
-    def run_command(cmd, logger)
+    def run_command(cmd)
       logger.info("Calling <#{__method__.to_s}> to run #{cmd}")
       system(cmd)
     end
 
     def is_port_open?(ip, port)
+      logger.info("Calling <#{__method__.to_s}> to check #{ip}:#{port}")
       begin
         Timeout::timeout(1) do
           begin
@@ -50,7 +51,7 @@ module Gogetit
       end
     end
 
-    def knife_bootstrap(name, provider, config, logger)
+    def knife_bootstrap(name, provider, config)
       logger.info("Calling <#{__method__.to_s}>")
       config[:chef][:target_environment] ||= '_default'
       if find_executable 'knife'
@@ -71,7 +72,7 @@ module Gogetit
       end
     end
 
-    def update_databags(config, logger)
+    def update_databags(config)
       logger.info("Calling <#{__method__.to_s}>")
       data_bags_dir = "#{config[:chef][:chef_repo_root]}/data_bags"
 
@@ -89,7 +90,7 @@ module Gogetit
           )
           case answer
           when 'y'
-            run_command("knife data bag delete -y #{bag}", logger)
+            run_command("knife data bag delete -y #{bag}")
           when 'n'
             puts 'Keeping..'
           end
@@ -98,7 +99,7 @@ module Gogetit
       puts 'Checking databags to create..'
       (databags_to_be - databags_as_is).each do |bag|
         puts "Creating databag '#{bag}'.."
-        run_command("knife data bag create #{bag}", logger)
+        run_command("knife data bag create #{bag}")
       end
 
       puts 'Checking items..'
@@ -113,28 +114,25 @@ module Gogetit
             if items_as_is.include? item
               run_command(
                 "knife vault update #{bag} #{item} --json #{item_file}"\
-                " --search '*:*' -M client",
-                logger
+                " --search '*:*' -M client"
               )
             else
               run_command(
                 "knife vault create #{bag} #{item} --json #{item_file}"\
-                " --search '*:*' -M client",
-                logger
+                " --search '*:*' -M client"
               )
             end
             run_command(
-              "knife vault refresh #{bag} #{item} --clean-unknown-clients -M client",
-              logger
+              "knife vault refresh #{bag} #{item} --clean-unknown-clients -M client"
             )
           else
-            run_command("knife data bag from file #{bag} #{item_file}", logger)
+            run_command("knife data bag from file #{bag} #{item_file}")
           end
         end
       end
     end
 
-    def knife_remove(name, logger)
+    def knife_remove(name)
       logger.info("Calling <#{__method__.to_s}>")
       if find_executable 'knife'
         if system('knife ssl check')
@@ -170,29 +168,29 @@ module Gogetit
       end
     end
 
-    def wait_until_available(ip_or_fqdn, distro_name, logger)
+    def wait_until_available(ip_or_fqdn, distro_name)
       logger.info("Calling <#{__method__.to_s}>")
-      until ping_available?(ip_or_fqdn, logger)
+      until ping_available?(ip_or_fqdn)
         logger.info("Calling <#{__method__.to_s}> for ping to be ready..")
         sleep 3
       end
       logger.info("#{ip_or_fqdn} is now available to ping..")
 
-      until ssh_available?(ip_or_fqdn, distro_name, logger)
+      until ssh_available?(ip_or_fqdn, distro_name)
         logger.info("Calling <#{__method__.to_s}> for ssh to be ready..")
         sleep 3
       end
       logger.info("#{ip_or_fqdn} is now available to ssh..")
     end
 
-    def ping_available?(host, logger)
+    def ping_available?(host)
       # host can be both IP and ip_or_fqdn.
       logger.info("Calling <#{__method__.to_s}> for #{host}")
       `ping -c 1 -W 1 #{host}`
       $?.exitstatus == 0
     end
 
-    def ssh_available?(ip_or_fqdn, user, logger)
+    def ssh_available?(ip_or_fqdn, user)
       logger.info("Calling <#{__method__.to_s}>")
       begin
         Net::SSH.start(ip_or_fqdn, user).class
@@ -201,11 +199,11 @@ module Gogetit
       end
     end
 
-    def check_ip_available(addresses, maas, logger)
+    def check_ip_available(addresses, maas)
       logger.info("Calling <#{__method__.to_s}>")
       # to do a ping test
       addresses.each do |ip|
-        abort("#{ip} is already being used.") if ping_available?(ip, logger)
+        abort("#{ip} is already being used.") if ping_available?(ip)
       end
       # to check with MAAS
       ifaces = maas.ip_reserved?(addresses)
@@ -214,7 +212,7 @@ module Gogetit
       return ifaces
     end
 
-    def run_through_ssh(host, distro_name, commands, logger)
+    def run_through_ssh(host, distro_name, commands)
       logger.info("Calling <#{__method__.to_s}>")
       Net::SSH.start(host, distro_name) do |ssh|
         commands.each do |cmd|
