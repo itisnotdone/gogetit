@@ -3,6 +3,8 @@ require 'net/ssh'
 require 'net/http'
 require 'active_support/core_ext/hash'
 require 'json'
+require 'socket'
+require 'timeout'
 
 module Gogetit
   module Util
@@ -11,16 +13,40 @@ module Gogetit
       system(cmd)
     end
 
+    def is_port_open?(ip, port)
+      begin
+        Timeout::timeout(1) do
+          begin
+            s = TCPSocket.new(ip, port)
+            s.close
+            return true
+          rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, SocketError
+            return false
+          end
+        end
+      rescue Timeout::Error
+      end
+
+      return false
+    end
+
     def get_http_content(url)
       logger.info("Calling <#{__method__.to_s}> to get #{url}")
+
       uri = URI.parse(url)
-      http = Net::HTTP.new(uri.host, uri.port)
-      res = http.request_post(uri.path, nil)
-      if res.code == "200"
-        res.body
+
+      if is_port_open?(uri.host, uri.port)
+        http = Net::HTTP.new(uri.host, uri.port)
+        res = http.request_post(uri.path, nil)
+        if res.code == "200"
+          res.body
+        else
+          logger.info("Unable to reach the content of #{url}.")
+          false
+        end
       else
-        logger.info("Unable to reach #{url}.")
-        nil
+        logger.info("Unable to reach the server: #{uri.host} or port: #{uri.port}.")
+        false
       end
     end
 
