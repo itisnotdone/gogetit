@@ -18,13 +18,6 @@ module Gogetit
     include Gogetit::Util
     package_name 'Gogetit'
 
-    # attr_accessor :result
-
-    # def initialize(*args)
-    #   super
-    #   @result = nil
-    # end
-
     desc 'list', 'List containers and instances, running currently.'
     def list
       puts "Listing LXD containers on #{Gogetit.config[:lxd][:nodes][0][:url]}.."
@@ -147,10 +140,14 @@ module Gogetit
       if provider
         case provider
         when 'lxd'
+          1.upto(100) { print '_' }; puts
+          puts "Destroying #{name}.."
           invoke :destroy, [name]
           alias_name = YAML.load(
             Gogetit.get_result[:info][:config][:"user.user-data"]
           )['source_image_alias']
+          1.upto(100) { print '_' }; puts
+          puts "Creating #{name}.."
           invoke :create, [name], :alias => alias_name
         when 'libvirt'
           invoke :release, [name]
