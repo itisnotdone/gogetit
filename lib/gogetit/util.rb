@@ -144,19 +144,6 @@ module Gogetit
       end
     end
 
-    def recognize_env
-      thedir = 'lib/env'
-      gateway = get_gateway(4)
-      Dir.foreach(thedir) do |item|
-        if item.match(/\.json$/)
-          env_data = JSON.parse(File.read(thedir+'/'+item))
-          if gateway =~ Regexp.new(env_data['regexp_pattern'])
-            return env_data['name']
-          end
-        end
-      end
-    end
-
     def get_gateway(version)
       IO.popen("ip -#{version.to_s} route").read.each_line do |route|
         if route.include? 'default'
