@@ -45,7 +45,11 @@ module Gogetit
 
     Logger::Severity.constants.each do |level|
       define_method(level.downcase) do |*args|
-        @loggers.each { |logger| logger.send(level.downcase, args) }
+        if level == :ERROR
+          @loggers.each { |logger| logger.send(level.downcase, "\e[31m#{args}\e[0m") }
+        else
+          @loggers.each { |logger| logger.send(level.downcase, "\e[36m#{args}\e[0m") }
+        end
       end
 
       define_method("#{ level.downcase }?".to_sym) do

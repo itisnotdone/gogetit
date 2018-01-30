@@ -9,8 +9,21 @@ require 'timeout'
 module Gogetit
   module Util
     def run_command(cmd)
-      logger.info("Calling <#{__method__.to_s}> to run #{cmd}")
+      logger.info("Calling <#{__method__.to_s}> to run '#{cmd}'")
       system(cmd)
+    end
+
+    def get_provider_of(name, providers)
+      if providers[:lxd].container_exists?(name)
+        logger.info("Calling <#{__method__.to_s}>, It is a LXD container.")
+        return 'lxd'
+      elsif providers[:libvirt].domain_exists?(name)
+        logger.info("Calling <#{__method__.to_s}>, It is a KVM domain.")
+        return 'libvirt'
+      else
+        puts "#{name} is not found"
+        return nil
+      end
     end
 
     def is_port_open?(ip, port)
@@ -42,11 +55,11 @@ module Gogetit
         if res.code == "200"
           res.body
         else
-          logger.info("Unable to reach the content of #{url}.")
+          logger.error("Unable to reach the content of #{url}.")
           false
         end
       else
-        logger.info("Unable to reach the server: #{uri.host} or port: #{uri.port}.")
+        logger.error("Unable to reach the server: #{uri.host} or port: #{uri.port}.")
         false
       end
     end

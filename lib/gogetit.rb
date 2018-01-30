@@ -16,16 +16,4 @@ module Gogetit
   @lxd = Gogetit::GogetLXD.new(config, maas, logger)
   @libvirt = Gogetit::GogetLibvirt.new(config, maas, logger)
 
-  def self.get_provider_of(name)
-    if lxd.container_exists?(name)
-      logger.info("Calling <#{__method__.to_s}>, It is a LXD container.")
-      return 'lxd'
-    elsif libvirt.domain_exists?(name)
-      logger.info("Calling <#{__method__.to_s}>, It is a KVM domain.")
-      return 'libvirt'
-    else
-      puts "#{name} is not found"
-      return nil
-    end
-  end
 end
