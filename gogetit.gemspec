@@ -41,4 +41,5 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency 'net-ssh', '~> 4.1.0'
   spec.add_runtime_dependency 'thor', '~> 0.19.0'
   spec.add_runtime_dependency 'hashie', '~> 3.5.5'
+  spec.add_runtime_dependency 'table_print', '~> 1.5.6'
 end

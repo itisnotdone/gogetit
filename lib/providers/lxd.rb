@@ -2,6 +2,7 @@ require 'hyperkit'
 require 'gogetit/util'
 require 'yaml'
 require 'hashie'
+require 'table_print'
 
 module Gogetit
   class GogetLXD
@@ -14,9 +15,41 @@ module Gogetit
       @conn = Hyperkit::Client.new(
           api_endpoint: config[:lxd][:nodes][0][:url],
           verify_ssl: false
-        )
+      )
       @maas = maas
       @logger = logger
+    end
+
+    def list_all_containers
+      logger.debug("Calling <#{__method__.to_s}>")
+
+      config[:lxd][:nodes].each do |node|
+        puts "Listing LXC containers on #{node[:url]}..."
+        conn = Hyperkit::Client.new(
+            api_endpoint: node[:url],
+            verify_ssl: false
+        )
+
+        nodes = []
+        conn.containers.each do |con|
+          row = {}
+          row[:name] = conn.container(con).to_hash[:name]
+          row[:status] = conn.container_state(con).to_hash[:status].upcase
+          if conn.container_state(con).to_hash[:network] && \
+              conn.container_state(con).to_hash[:network][:eth0] && \
+              conn.container_state(con).to_hash[:network][:eth0][:addresses] && \
+              conn.container_state(con).to_hash[:network][:eth0][:addresses][0] && \
+              conn.container_state(con).to_hash[:network][:eth0][:addresses][0][:address]
+            row[:ipv4] = \
+              conn.container_state(con).to_hash[:network][:eth0][:addresses][0][:address]
+          else
+            row[:ipv4] = "NA"
+          end
+          nodes << row
+        end
+        tp nodes, :name, :status, :ipv4
+        puts
+      end
     end
 
     def list
@@ -49,6 +82,8 @@ module Gogetit
       logger.info("Calling <#{__method__.to_s}>")
 
       args[:config] = {}
+
+        args[:config][:"user.user-data"]['maas'] = true
 
       if options['no-maas']
         args[:config][:'user.user-data'] = \

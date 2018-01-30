@@ -28,10 +28,24 @@ module Gogetit
     end
 
     desc 'list', 'List containers and instances, running currently.'
+    method_option :out, :aliases => '-o', :type => :string, \
+      :default => '', :desc => 'to list from all remotes'
     def list
-      puts "Listing LXD containers on #{config[:lxd][:nodes][0][:url]}.."
-      system("lxc list #{config[:lxd][:nodes][0][:name]}:")
-      puts ''
+      case options[:out]
+      when 'custom'
+        lxd.list_all_containers
+      when 'all'
+        config[:lxd][:nodes].each do |node|
+          puts "Listing LXD containers on #{node[:url]}.."
+          system("lxc list #{node[:name]}:")
+        end
+      when ''
+        puts "Listing LXD containers on #{config[:lxd][:nodes][0][:url]}.."
+        system("lxc list #{config[:lxd][:nodes][0][:name]}:")
+        puts ''
+      else
+        puts "Invalid option or command"
+      end
       puts "Listing KVM domains on #{config[:libvirt][:nodes][0][:url]}.."
       system("virsh -c #{config[:libvirt][:nodes][0][:url]} list --all")
     end
