@@ -23,14 +23,15 @@ module Gogetit
     def list_all_containers
       logger.debug("Calling <#{__method__.to_s}>")
 
+      nodes = []
       config[:lxd][:nodes].each do |node|
         puts "Listing LXC containers on #{node[:url]}..."
+
         conn = Hyperkit::Client.new(
             api_endpoint: node[:url],
             verify_ssl: false
         )
 
-        nodes = []
         conn.containers.each do |con|
           row = {}
           row[:name] = conn.container(con).to_hash[:name]
@@ -41,15 +42,18 @@ module Gogetit
               conn.container_state(con).to_hash[:network][:eth0][:addresses][0] && \
               conn.container_state(con).to_hash[:network][:eth0][:addresses][0][:address]
             row[:ipv4] = \
+              # only print the first IP address on the first interface
               conn.container_state(con).to_hash[:network][:eth0][:addresses][0][:address]
           else
             row[:ipv4] = "NA"
           end
+          row[:host] = node[:name]
           nodes << row
         end
-        tp nodes, :name, :status, :ipv4
-        puts
       end
+      puts '-----------------------------------------------------------'
+      tp nodes, :name, :status, :ipv4, :host
+      puts
     end
 
     def list
@@ -83,8 +87,6 @@ module Gogetit
 
       args[:config] = {}
 
-        args[:config][:"user.user-data"]['maas'] = true
-
       if options['no-maas']
         args[:config][:'user.user-data'] = \
           YAML.load_file(options['file'])[:config]['user.user-data']
@@ -104,9 +106,11 @@ module Gogetit
           end
         end
 
-        args[:config][:"user.user-data"]['maas'] = true
         args[:config][:"user.user-data"]['source_image_alias'] = args[:alias]
+        args[:config][:"user.user-data"]['maas'] = true
       end
+
+      args[:config][:"user.user-data"]['gogetit'] = true
 
       # To disable to update apt database on first boot
       # so chef client can keep doing its job.
