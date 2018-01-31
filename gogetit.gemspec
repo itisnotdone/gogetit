@@ -26,20 +26,19 @@ Gem::Specification.new do |spec|
   spec.executables   = ['gogetit']
   spec.require_paths = ['lib']
 
-  spec.add_development_dependency 'bundler', '~> 1.15'
-  spec.add_development_dependency 'rake', '~> 10.0'
-  spec.add_development_dependency 'rspec', '~> 3.0'
-  spec.add_development_dependency 'pry', '~> 0.10.4'
-  spec.add_development_dependency 'simplecov', '~> 0.14.1'
+  spec.add_development_dependency 'bundler'
+  spec.add_development_dependency 'rake'
+  spec.add_development_dependency 'rspec'
+  spec.add_development_dependency 'pry'
+  spec.add_development_dependency 'simplecov'
 
-  #spec.add_runtime_dependency 'etcd-rb', '~> 1.1.0'
-  spec.add_runtime_dependency 'json', '~> 2.1.0'
-  spec.add_runtime_dependency 'hyperkit', '~> 1.1.0'
+  spec.add_runtime_dependency 'json'
+  spec.add_runtime_dependency 'hyperkit'
   spec.add_runtime_dependency 'maas-client'
-  spec.add_runtime_dependency 'ruby-libvirt', '~> 0.7.0'
-  spec.add_runtime_dependency 'oga', '~> 2.10'
-  spec.add_runtime_dependency 'net-ssh', '~> 4.1.0'
-  spec.add_runtime_dependency 'thor', '~> 0.19.0'
-  spec.add_runtime_dependency 'hashie', '~> 3.5.5'
-  spec.add_runtime_dependency 'table_print', '~> 1.5.6'
+  spec.add_runtime_dependency 'ruby-libvirt'
+  spec.add_runtime_dependency 'oga'
+  spec.add_runtime_dependency 'net-ssh'
+  spec.add_runtime_dependency 'thor'
+  spec.add_runtime_dependency 'hashie'
+  spec.add_runtime_dependency 'table_print'
 end
