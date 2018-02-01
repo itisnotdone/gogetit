@@ -38,10 +38,10 @@ libvirt:
   nodes:
     -
       name: kvm01
-      url: qemu+ssh://$whoami@kvm01.example.com/system
+      url: qemu+ssh://user@kvm01.example.com/system
     -
       name: kvm02
-      url: qemu+ssh://$whoami@kvm02.example.com/system
+      url: qemu+ssh://user@kvm02.example.com/system
   specs:
     default:
       vcpu: 1

@@ -12,7 +12,15 @@ module Gogetit
 
     def initialize(conf, maas, logger)
       @config = conf
-      @conn = Libvirt::open(config[:libvirt][:nodes][0][:url])
+
+      begin
+        @conn = Libvirt::open(config[:libvirt][:nodes][0][:url])
+      rescue Exception => e
+        puts e
+        abort("Unable to establish connection with"\
+              " #{config[:libvirt][:nodes][0][:url]}")
+      end
+
       @maas = maas
       @logger = logger
     end

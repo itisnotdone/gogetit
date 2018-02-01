@@ -94,7 +94,7 @@ module Gogetit
       end
 
     else
-      abort('Please check if LXD is installed.')
+      abort('Please check if LXD is installed properly.')
     end
 
     config[:libvirt][:nodes].each do |node|
@@ -108,6 +108,7 @@ module Gogetit
             " your workstation."
           puts "scp -r ~/.ssh ubuntu@#{`hostname -f`.chop!}:~/"
           abort("Unable to make connection with #{node[:url]}.")
+          require 'pry'; binding.pry 
         end
       end
     end
