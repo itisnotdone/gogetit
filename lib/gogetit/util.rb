@@ -169,7 +169,7 @@ module Gogetit
     end
 
     def wait_until_available(ip_or_fqdn, distro_name)
-      logger.info("Calling <#{__method__.to_s}>")
+      logger.info("Calling <#{__method__.to_s}> for network connection..")
       until ping_available?(ip_or_fqdn)
         logger.info("Calling <#{__method__.to_s}> for ping to be ready..")
         sleep 3
@@ -191,12 +191,14 @@ module Gogetit
     end
 
     def ssh_available?(ip_or_fqdn, user)
-      logger.info("Calling <#{__method__.to_s}>")
+      logger.info("Calling <#{__method__.to_s}> for #{user}@#{ip_or_fqdn}")
       begin
-        Net::SSH.start(ip_or_fqdn, user).class
+        Net::SSH.start(ip_or_fqdn, user)
       rescue Exception => e
         puts e
+        false
       end
+      true
     end
 
     def check_ip_available(addresses, maas)

@@ -62,7 +62,7 @@ module Gogetit
     end
 
     def container_exists?(name)
-      logger.info("Calling <#{__method__.to_s}>")
+      logger.info("Calling <#{__method__.to_s}> for #{name}")
       list.each do |c|
         return true if c == name
       end

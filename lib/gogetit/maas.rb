@@ -21,7 +21,7 @@ module Gogetit
     end
 
     def machine_exists?(name)
-      logger.info("Calling <#{__method__.to_s}>")
+      logger.info("Calling <#{__method__.to_s}> for #{name}")
       conn.request(:get, ['machines']).each do |m|
         return true if m['hostname'] == name
       end
@@ -37,7 +37,7 @@ module Gogetit
     end
 
     def dnsresource_exists?(name)
-      logger.info("Calling <#{__method__.to_s}>")
+      logger.info("Calling <#{__method__.to_s}> for #{name}")
       conn.request(:get, ['dnsresources']).each do |item|
         return true if item['fqdn'] == name + '.' + get_domain
       end
@@ -45,7 +45,7 @@ module Gogetit
     end
 
     def domain_name_exists?(name)
-      logger.info("Calling <#{__method__.to_s}>")
+      logger.info("Calling <#{__method__.to_s}> for #{name}")
       return true if dnsresource_exists?(name) or machine_exists?(name)
     end
 

@@ -59,8 +59,57 @@ module Gogetit
       dst = Dir.new(user_gogetit_home)
       logger.info('Copying GoGetIt default configuration..')
       FileUtils.cp(src, dst)
-      abort('Please define default configuration for GoGetIt at ~/.gogetit/gogetit.yml.')
+      abort(
+        'Please define default configuration for GoGetIt at ~/.gogetit/gogetit.yml.'
+      )
     end
     config.merge!(Hashie.symbolize_keys YAML.load_file(conf_file))
+
+    # to check if lxd is well deployed and configured.
+    if Dir.exist?("/home/ubuntu/.config/lxc")
+
+      if Dir.exist?("/home/ubuntu/.config/lxc/servercerts")
+
+        certificates = (
+          Dir.entries("/home/ubuntu/.config/lxc/servercerts") - ['.', '..']
+        )
+
+        if not certificates.empty?
+
+          config[:lxd][:nodes].each do |node|
+            if not certificates.include? "#{node[:name]}.crt"
+              puts "Unable to find the certificate for node, #{node[:name]}."
+              puts "You might need to run following command to accept the certificate"
+              puts "lxc remote add --accept-certificate #{node[:name]}"\
+                " #{node[:url]}"
+            end
+          end
+
+        end
+
+      else
+        abort(
+          'Please check if remotes are properly registered with their certificates.'
+        )
+      end
+
+    else
+      abort('Please check if LXD is installed.')
+    end
+
+    config[:libvirt][:nodes].each do |node|
+      if node[:url].split('//')[0].include? "ssh"
+        if not ssh_available?(
+          node[:url].split('//')[1].split('/')[0].split('@')[1],
+          node[:url].split('//')[1].split('/')[0].split('@')[0]
+        )
+          puts "Please check the URL or SSH private key."
+          puts "OR SCP the previous .ssh folder if you are rebuilding"\
+            " your workstation."
+          puts "scp -r ~/.ssh ubuntu@#{`hostname -f`.chop!}:~/"
+          abort("Unable to make connection with #{node[:url]}.")
+        end
+      end
+    end
   end
 end
