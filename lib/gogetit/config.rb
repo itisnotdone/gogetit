@@ -66,12 +66,12 @@ module Gogetit
     config.merge!(Hashie.symbolize_keys YAML.load_file(conf_file))
 
     # to check if lxd is well deployed and configured.
-    if Dir.exist?("/home/ubuntu/.config/lxc")
+    if Dir.exist?("#{ENV["HOME"]}/.config/lxc")
 
-      if Dir.exist?("/home/ubuntu/.config/lxc/servercerts")
+      if Dir.exist?("#{ENV["HOME"]}/.config/lxc/servercerts")
 
         certificates = (
-          Dir.entries("/home/ubuntu/.config/lxc/servercerts") - ['.', '..']
+          Dir.entries("#{ENV["HOME"]}/.config/lxc/servercerts") - ['.', '..']
         )
 
         if not certificates.empty?
@@ -94,6 +94,11 @@ module Gogetit
       end
 
     else
+      puts "You might need to run following command to accept the certificate"
+      config[:lxd][:nodes].each do |node|
+        puts "lxc remote add --accept-certificate #{node[:name]}"\
+          " #{node[:url]}"
+      end
       abort('Please check if LXD is installed properly.')
     end
 

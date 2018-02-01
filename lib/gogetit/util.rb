@@ -14,11 +14,12 @@ module Gogetit
     end
 
     def get_provider_of(name, providers)
+      logger.info("Calling <#{__method__.to_s}> #{name}")
       if providers[:lxd].container_exists?(name)
-        logger.info("Calling <#{__method__.to_s}>, It is a LXD container.")
+        logger.info("It is a LXD container.")
         return 'lxd'
       elsif providers[:libvirt].domain_exists?(name)
-        logger.info("Calling <#{__method__.to_s}>, It is a KVM domain.")
+        logger.info("It is a KVM domain.")
         return 'libvirt'
       else
         puts "#{name} is not found"
