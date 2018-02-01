@@ -194,10 +194,15 @@ module Gogetit
     def ssh_available?(ip_or_fqdn, user)
       logger.info("Calling <#{__method__.to_s}> for #{user}@#{ip_or_fqdn}")
       begin
-        Net::SSH.start(ip_or_fqdn, user)
+        Net::SSH.start(
+          ip_or_fqdn,
+          user,
+          :keys_only => true,
+          :number_of_password_prompts => 0
+        )
       rescue Exception => e
         puts e
-        false
+        return false
       end
       true
     end

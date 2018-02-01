@@ -94,7 +94,7 @@ module Gogetit
       end
 
     else
-      puts "You might need to run following command to accept the certificate"
+      puts "You might need to run following commands to accept the certificate"
       config[:lxd][:nodes].each do |node|
         puts "lxc remote add --accept-certificate #{node[:name]}"\
           " #{node[:url]}"
@@ -113,7 +113,6 @@ module Gogetit
             " your workstation."
           puts "scp -r ~/.ssh ubuntu@#{`hostname -f`.chop!}:~/"
           abort("Unable to make connection with #{node[:url]}.")
-          require 'pry'; binding.pry 
         end
       end
     end
