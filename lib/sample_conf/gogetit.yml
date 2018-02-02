@@ -2,24 +2,6 @@ default:
   user: ubuntu
   root_bridge: $root_bridge
 
-cloud_init:
-  users:
-    - name: usera
-      gecos: usera
-      sudo: ALL=(ALL) NOPASSWD:ALL
-      groups: users, admin
-      shell: /bin/bash
-      lock_passwd: true
-  ca_certs:
-    - http://pki.example.com/site/root_ca.crt
-  ssh_ca_public_key:
-    key_url: http://pki.example.com/site/ssh_ca.pub
-    key_path: /etc/ssh/ca.pub
-    revocation_url: http://pki.example.com/site/ssh-revoked-keys
-    revocation_path: /etc/ssh/ca.pub
-    owner: root:root
-    permissions: '0640'
-
 maas:
   key: K:E:Y
   url: http://maas.example.com/MAAS/api/2.0
@@ -72,3 +54,21 @@ chef:
     install_script: 
       libvirt: http://chef.example.com/install_chef_script.sh
       lxd: http://chef.example.com/install_chef_script_for_lxd.sh
+
+cloud_init:
+  users:
+    - name: usera
+      gecos: usera
+      sudo: ALL=(ALL) NOPASSWD:ALL
+      groups: users, admin
+      shell: /bin/bash
+      lock_passwd: true
+  ca_certs:
+    - http://pki.example.com/site/root_ca.crt
+  ssh_ca_public_key:
+    key_url: http://pki.example.com/site/ssh_ca.pub
+    key_path: /etc/ssh/ca.pub
+    revocation_url: http://pki.example.com/site/ssh-revoked-keys
+    revocation_path: /etc/ssh/ca.pub
+    owner: root:root
+    permissions: '0640'

@@ -20,42 +20,6 @@ module Gogetit
       @logger = logger
     end
 
-    def list_all_containers
-      logger.debug("Calling <#{__method__.to_s}>")
-
-      nodes = []
-      config[:lxd][:nodes].each do |node|
-        puts "Listing LXC containers on #{node[:url]}..."
-
-        conn = Hyperkit::Client.new(
-            api_endpoint: node[:url],
-            verify_ssl: false
-        )
-
-        conn.containers.each do |con|
-          row = {}
-          row[:name] = conn.container(con).to_hash[:name]
-          row[:status] = conn.container_state(con).to_hash[:status].upcase
-          if conn.container_state(con).to_hash[:network] && \
-              conn.container_state(con).to_hash[:network][:eth0] && \
-              conn.container_state(con).to_hash[:network][:eth0][:addresses] && \
-              conn.container_state(con).to_hash[:network][:eth0][:addresses][0] && \
-              conn.container_state(con).to_hash[:network][:eth0][:addresses][0][:address]
-            row[:ipv4] = \
-              # only print the first IP address on the first interface
-              conn.container_state(con).to_hash[:network][:eth0][:addresses][0][:address]
-          else
-            row[:ipv4] = "NA"
-          end
-          row[:host] = node[:name]
-          nodes << row
-        end
-      end
-      puts '-----------------------------------------------------------'
-      tp nodes, :name, :status, :ipv4, :host
-      puts
-    end
-
     def list
       logger.info("Calling <#{__method__.to_s}>")
       conn.containers

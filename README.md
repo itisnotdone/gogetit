@@ -37,6 +37,9 @@ $ gem install gogetit --no-ri --no-rdoc
 ## Usage
 ```bash
 gogetit list
+gogetit list -out all
+gogetit list -o custom
+
 gogetit create lxd01
 gogetit create lxd01 --provider lxd
 

@@ -33,21 +33,23 @@ module Gogetit
     def list
       case options[:out]
       when 'custom'
-        lxd.list_all_containers
+        Gogetit.list_all_types
       when 'all'
         config[:lxd][:nodes].each do |node|
           puts "Listing LXD containers on #{node[:url]}.."
           system("lxc list #{node[:name]}:")
         end
+        puts "Listing KVM domains on #{config[:libvirt][:nodes][0][:url]}.."
+        system("virsh -c #{config[:libvirt][:nodes][0][:url]} list --all")
       when ''
         puts "Listing LXD containers on #{config[:lxd][:nodes][0][:url]}.."
         system("lxc list #{config[:lxd][:nodes][0][:name]}:")
         puts ''
+        puts "Listing KVM domains on #{config[:libvirt][:nodes][0][:url]}.."
+        system("virsh -c #{config[:libvirt][:nodes][0][:url]} list --all")
       else
         puts "Invalid option or command"
       end
-      puts "Listing KVM domains on #{config[:libvirt][:nodes][0][:url]}.."
-      system("virsh -c #{config[:libvirt][:nodes][0][:url]} list --all")
     end
 
     desc 'create NAME', 'Create either a container or KVM domain.'
