@@ -61,6 +61,8 @@ module Gogetit
       :desc => 'A distro name with its series for libvirt provider'
     method_option :chef, :aliases => '-c', :type => :boolean, \
       :default => false, :desc => 'Chef awareness'
+    method_option :zero, :aliases => '-z', :type => :boolean, \
+      :default => false, :desc => 'Chef Zero awareness'
     method_option :vlans, :aliases => '-v', :type => :array, \
       :desc => 'A list of VLAN IDs to connect to'
     method_option :ipaddresses, :aliases => '-i', :type => :array, \
@@ -72,6 +74,9 @@ module Gogetit
     def create(name)
       abort("'vlans' and 'ipaddresses' can not be set together.") \
         if options['vlans'] and options['ipaddresses']
+
+      abort("'chef' and 'zero' can not be set together.") \
+        if options['chef'] and options['zero']
 
       abort("when 'no-maas', the network configuration have to be set by 'file'.") \
         if options['no-maas'] and (options['vlans'] or options['ipaddresses'])
@@ -96,14 +101,22 @@ module Gogetit
 
       # post-tasks
       if options['chef']
-        knife_bootstrap(name, options[:provider], config, logger)
-        update_databags(config, logger)
+        bootstrap_chef(name, options[:provider], config)
+        update_databags(config)
+      elsif options['zero']
+        knife_bootstrap_zero(name, options[:provider], config)
       end
     end
 
     desc 'destroy NAME', 'Destroy either a container or KVM instance.'
-    method_option :chef, :type => :boolean, :desc => "Enable chef awareness."
+    method_option :chef, :aliases => '-c', :type => :boolean, \
+      :default => false, :desc => 'Chef awareness'
+    method_option :zero, :aliases => '-z', :type => :boolean, \
+      :default => false, :desc => 'Chef Zero awareness'
     def destroy(name)
+      abort("'chef' and 'zero' can not be set together.") \
+        if options['chef'] and options['zero']
+
       provider = get_provider_of(name, providers)
       if provider
         case provider
@@ -117,8 +130,10 @@ module Gogetit
       end
       # post-tasks
       if options['chef']
-        knife_remove(name) if options[:chef]
+        knife_remove(name, options)
         update_databags(config)
+      elsif options['zero']
+        knife_remove(name, options)
       end
     end
 
@@ -127,25 +142,41 @@ module Gogetit
       :desc => 'A distro name with its series for libvirt provider'
     method_option :chef, :aliases => '-c', :type => :boolean, \
       :default => false, :desc => 'Chef awareness'
+    method_option :zero, :aliases => '-z', :type => :boolean, \
+      :default => false, :desc => 'Chef Zero awareness'
     def deploy(name)
+      abort("'chef' and 'zero' can not be set together.") \
+        if options['chef'] and options['zero']
+
       Gogetit::CLI.result = libvirt.deploy(name, options.to_hash)
 
       # post-tasks
       if options['chef']
-        knife_bootstrap(name, options[:provider], config, logger)
-        update_databags(config, logger)
+        knife_bootstrap(name, options[:provider], config)
+        update_databags(config)
+      elsif options['zero']
+        knife_bootstrap_zero(name, options[:provider], config)
       end
     end
 
     desc 'release NAME', 'Release a node in MAAS'
     method_option :chef, :type => :boolean, :desc => "Enable chef awareness."
+    method_option :chef, :aliases => '-c', :type => :boolean, \
+      :default => false, :desc => 'Chef awareness'
+    method_option :zero, :aliases => '-z', :type => :boolean, \
+      :default => false, :desc => 'Chef Zero awareness'
     def release(name)
+      abort("'chef' and 'zero' can not be set together.") \
+        if options['chef'] and options['zero']
+
       Gogetit::CLI.result = libvirt.release(name)
 
       # post-tasks
       if options['chef']
-        knife_remove(name) if options[:chef]
+        knife_remove(name, options)
         update_databags(config)
+      elsif options['zero']
+        knife_remove(name, options)
       end
     end
 
@@ -153,7 +184,12 @@ module Gogetit
     ' either a container or a node(machine) in MAAS again.'
     method_option :chef, :aliases => '-c', :type => :boolean, \
       :default => false, :desc => 'Chef awareness'
+    method_option :zero, :aliases => '-z', :type => :boolean, \
+      :default => false, :desc => 'Chef Zero awareness'
     def rebuild(name)
+      abort("'chef' and 'zero' can not be set together.") \
+        if options['chef'] and options['zero']
+
       provider = get_provider_of(name, providers)
       if provider
         case provider
@@ -177,8 +213,8 @@ module Gogetit
       end
       # post-tasks
       if options['chef']
-        knife_remove(name, logger) if options[:chef]
-        update_databags(config, logger)
+        knife_remove(name) if options[:chef]
+        update_databags(config)
       end
     end
   end

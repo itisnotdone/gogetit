@@ -60,8 +60,8 @@ gogetit create kvm01 -p libvirt
 gogetit create kvm01 -p libvirt -i 192.168.10.10 10.0.0.2
 
 # When specifying alias for LXD provider
-gogetit create kvm01 -a centos7
-gogetit create kvm01 -p lxd -a centos7
+gogetit create lxd01 -a centos7
+gogetit create lxd02 -p lxd -a centos7
 
 # When specifying distro for Libvirt provider
 gogetit create kvm01 -p libvirt -d centos
@@ -74,20 +74,18 @@ gogetit deploy kvm01 -d centos
 gogetit create lxd01 --no-maas -f lxd_without_maas.yml
 gogetit create lxd01 --no-maas -f lxd_without_maas_vlans.yml
 
-# to provision with a bare metal machine
-# gogetit create kvm01 -p bare
-
 gogetit destroy lxd01
 
 # This feature is broken and might be deprecated in the future.
 # gogetit rebuild kvm01
 
-# to create a container bootstrapping as a chef node
+# to create a container bootstrapping as server node
 gogetit create chef01 --chef
+gogetit destroy chef01 --chef
 
-or
-
-CHEF=true gogetit create chef01
+# to create a container bootstrapping as zero(local) node
+gogetit create chef01 --zero
+gogetit destroy chef01 --zero
 
 
 # to destroy a container deleting corresponding chef node and client
