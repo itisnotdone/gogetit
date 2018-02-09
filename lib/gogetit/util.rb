@@ -101,6 +101,33 @@ module Gogetit
       end
     end
 
+    def knife_remove(name, options)
+      logger.info("Calling <#{__method__.to_s}>")
+      if find_executable 'knife'
+        if options['chef']
+          if system('knife ssl check')
+            logger.info("With chef-server..")
+            puts "Deleting node #{name}.."
+            logger.info("knife node delete -y #{name}")
+            system("knife node delete -y #{name}")
+            puts "Deleting client #{name}.."
+            logger.info("knife client delete -y #{name}")
+            system("knife client delete -y #{name}")
+          else
+            abort('knife is not configured properly.')
+          end
+        elsif options['zero']
+          logger.info("With chef-zero..")
+          puts "Deleting node #{name}.."
+          logger.info("knife node delete -y #{name}")
+          system("knife node delete -y #{name}")
+          puts "Deleting client #{name}.."
+          logger.info("knife client delete -y #{name}")
+          system("knife client delete -y #{name}")
+        end
+      end
+    end
+
     def update_databags(config)
       logger.info("Calling <#{__method__.to_s}>")
       data_bags_dir = "#{config[:chef][:chef_repo_root]}/data_bags"
@@ -157,33 +184,6 @@ module Gogetit
           else
             run_command("knife data bag from file #{bag} #{item_file}")
           end
-        end
-      end
-    end
-
-    def knife_remove(name, options)
-      logger.info("Calling <#{__method__.to_s}>")
-      if find_executable 'knife'
-        if options['chef']
-          if system('knife ssl check')
-            logger.info("With chef-server..")
-            puts "Deleting node #{name}.."
-            logger.info("knife node delete -y #{name}")
-            system("knife node delete -y #{name}")
-            puts "Deleting client #{name}.."
-            logger.info("knife client delete -y #{name}")
-            system("knife client delete -y #{name}")
-          else
-            abort('knife is not configured properly.')
-          end
-        elsif options['zero']
-          logger.info("With chef-zero..")
-          puts "Deleting node #{name}.."
-          logger.info("knife node delete -y #{name}")
-          system("knife node delete -y #{name}")
-          puts "Deleting client #{name}.."
-          logger.info("knife client delete -y #{name}")
-          system("knife client delete -y #{name}")
         end
       end
     end
