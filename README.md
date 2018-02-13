@@ -99,6 +99,10 @@ gogetit release node01
 require 'gogetit'
 ```
 
+## Issues
+- Unable upgrade chefdk to 2.x
+  - https://github.com/chef/chef-dk/pull/1316#issuecomment-313738278
+
 ## To document
 - How to make Gogetit recognize vault data bag items
 
