@@ -11,7 +11,7 @@ By using this, you will get to use them all together in automated and efficient 
 
 ## Limitations
 - Network resource awareness is only provided by MAAS.
-- Only LXD and Libvirt(KVM) are available as provider.
+- For now, only LXD and Libvirt(KVM) are available as provider.
 - Only IPv4 is available for IP assignment.
 - It is tested only on Ubuntu 16.04 with OVS as virtual switch.
 
@@ -98,10 +98,6 @@ gogetit release node01
 ```ruby
 require 'gogetit'
 ```
-
-## Issues
-- Unable upgrade chefdk to 2.x
-  - https://github.com/chef/chef-dk/pull/1316#issuecomment-313738278
 
 ## To document
 - How to make Gogetit recognize vault data bag items

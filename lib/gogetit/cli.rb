@@ -101,7 +101,7 @@ module Gogetit
 
       # post-tasks
       if options['chef']
-        bootstrap_chef(name, options[:provider], config)
+        knife_bootstrap_chef(name, options[:provider], config)
         update_databags(config)
       elsif options['zero']
         knife_bootstrap_zero(name, options[:provider], config)
