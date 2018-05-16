@@ -12,7 +12,6 @@
         ipv4: true
         address: 192.168.111.10/24
         gateway: 192.168.111.1
-        mtu: 8954
         control: auto
     - type: vlan
       name: eth0.112
@@ -22,7 +21,6 @@
       - type: static
         ipv4: true
         address: 192.168.112.10/24
-        mtu: 8954
         control: auto
     - type: vlan
       name: eth0.113
@@ -32,7 +30,6 @@
       - type: static
         ipv4: true
         address: 192.168.113.10/24
-        mtu: 8954
         control: auto
   user.user-data:
     ssh_authorized_keys:
@@ -41,7 +38,7 @@
     apt_mirror: http://kr.archive.ubuntu.com/ubuntu
 :devices:
   :eth0:
-    :mtu: '8954'
+    :mtu: "8954"
     :name: eth0
     :nictype: bridged
     :parent: $root_bridge

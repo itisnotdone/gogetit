@@ -52,8 +52,7 @@ module Gogetit
       args[:config] = {}
 
       if options['no-maas']
-        args[:config][:'user.user-data'] = \
-          YAML.load_file(options['file'])[:config]['user.user-data']
+        args[:config][:"user.user-data"] = {}
       else
         sshkeys = maas.get_sshkeys
         pkg_repos = maas.get_package_repos
@@ -163,13 +162,18 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
 
     def generate_network_config(args, options)
       logger.info("Calling <#{__method__.to_s}>")
+
       if options['no-maas']
         args[:config][:'user.network-config'] = \
-          YAML.load_file(options['file'])[:config][:'user.network-config']
+          YAML.load_file(options['file'])['network']
 
-        options['ip_to_access'] = \
-          args[:config][:"user.network-config"]['config'][1]['subnets'][0]['address']
-          .split('/')[0]
+        # physical device will be the gate device
+        args[:config][:"user.network-config"]['config'].each do |iface|
+          if iface['type'] == "physical"
+            options['ip_to_access'] = iface['subnets'][0]['address'].split('/')[0]
+          end
+        end
+
         args[:config][:"user.network-config"] = \
           YAML.dump(args[:config][:"user.network-config"])[4..-1]
 
@@ -258,7 +262,15 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
 
       if options['no-maas']
         args[:devices] = \
-          YAML.load_file(options['file'])[:devices]
+          (Hashie.symbolize_keys YAML.load_file(options['file'])['devices'])
+        # Now, LXD API can handle integer as a value of a map
+        args[:devices].each do |k, v|
+          v.each do |kk, vv|
+            if vv.is_a? Integer
+              v[kk] = vv.to_s
+            end
+          end
+        end
 
       elsif options['ipaddresses']
         options[:ifaces].each_with_index do |iface,index|
@@ -387,6 +399,9 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
       container = conn.container(name)
 
       container.devices = args[:devices].merge!(container.devices.to_hash)
+
+      require 'pry'; binding.pry
+
       conn.update_container(name, container)
       # Fetch container object again
       container = conn.container(name)

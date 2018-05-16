@@ -167,19 +167,20 @@ module Gogetit
           item_file = data_bags_dir+'/'+bag+'/'+item
           item = item.gsub('.json', '')
           if JSON.parse(File.read(item_file))['vault']
+            # We assumes you have configured 'mode' and 'admins' on your knife.rb
             if items_as_is.include? item
               run_command(
                 "knife vault update #{bag} #{item} --json #{item_file}"\
-                " --search '*:*' -M client"
+                " --search '*:*'"
               )
             else
               run_command(
                 "knife vault create #{bag} #{item} --json #{item_file}"\
-                " --search '*:*' -M client"
+                " --search '*:*'"
               )
             end
             run_command(
-              "knife vault refresh #{bag} #{item} --clean-unknown-clients -M client"
+              "knife vault refresh #{bag} #{item} --clean-unknown-clients"
             )
           else
             run_command("knife data bag from file #{bag} #{item_file}")

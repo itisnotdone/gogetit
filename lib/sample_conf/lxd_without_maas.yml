@@ -12,7 +12,6 @@
         ipv4: true
         address: 192.168.112.10/24
         gateway: 192.168.112.1
-        mtu: 8954
         control: auto
     - type: physical
       name: eth1
@@ -20,7 +19,6 @@
       - type: static
         ipv4: true
         address: 192.168.113.10/24
-        mtu: 8954
         control: auto
     - type: physical
       name: eth2
@@ -28,7 +26,6 @@
       - type: static
         ipv4: true
         address: 192.168.114.10/24
-        mtu: 8954
         control: auto
   user.user-data:
     ssh_authorized_keys:
