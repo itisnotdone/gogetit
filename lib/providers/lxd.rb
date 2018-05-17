@@ -53,6 +53,9 @@ module Gogetit
 
       if options['no-maas']
         args[:config][:"user.user-data"] = {}
+        if options['maas-on-lxc']
+          args[:config][:"security.privileged"] = "true"
+        end
       else
         sshkeys = maas.get_sshkeys
         pkg_repos = maas.get_package_repos
@@ -80,7 +83,7 @@ module Gogetit
       args[:config][:'user.user-data']['package_update'] = false
       args[:config][:'user.user-data']['package_upgrade'] = false
 
-      generate_cloud_init_config(config, args)
+      generate_cloud_init_config(options, config, args)
 
       args[:config][:"user.user-data"] = \
         "#cloud-config\n" + YAML.dump(args[:config][:"user.user-data"])[4..-1]
@@ -88,11 +91,18 @@ module Gogetit
       return args
     end
 
-    def generate_cloud_init_config(config, args)
+    def generate_cloud_init_config(options, config, args)
       logger.info("Calling <#{__method__.to_s}>")
+      if options['no-maas']
+        # When there is no MAAS, containers should be able to resolve
+        # their name with hosts file.
+        args[:config][:'user.user-data']['manage_etc_hosts'] = true
+      end
+
       # To add truested root CA certificates
       # https://cloudinit.readthedocs.io/en/latest/topics/examples.html
       # #configure-an-instances-trusted-ca-certificates
+      #
       if config[:cloud_init] && config[:cloud_init][:ca_certs]
         args[:config][:'user.user-data']['ca-certs'] = {}
         certs = []
@@ -400,7 +410,15 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
 
       container.devices = args[:devices].merge!(container.devices.to_hash)
 
-      require 'pry'; binding.pry
+      # https://github.com/jeffshantz/hyperkit/blob/master/lib/hyperkit/client/containers.rb#L240
+      # Adding configurations that are necessary for shipping MAAS on lxc
+      if options['no-maas'] and options['maas-on-lxc']
+        container.config = container.config.to_hash
+        container.config[:"raw.lxc"] = "\
+lxc.cgroup.devices.allow = c 10:237 rwm\n\
+lxc.aa_profile = unconfined\n\
+lxc.cgroup.devices.allow = b 7:* rwm"
+      end
 
       conn.update_container(name, container)
       # Fetch container object again
