@@ -69,6 +69,9 @@ module Gogetit
       :desc => 'A list of static IPs to assign'
     method_option :"no-maas", :type => :boolean, \
       :desc => 'Without MAAS awareness(only for LXD provider)'
+    method_option :"maas-on-lxc", :type => :boolean, \
+      :desc => 'To install MAAS on a LXC enabling necessary user config'\
+      '(only for LXD provider with no-maas enabled)'
     method_option :"file", :aliases => '-f', :type => :string, \
       :desc => 'File location(only for LXD provider)'
     def create(name)
@@ -83,6 +86,9 @@ module Gogetit
 
       abort("'no-maas' and 'file' have to be set together.") \
         if options['no-maas'] ^ !!options['file']
+
+      abort("'maas-on-lxc' and 'no-maas' have to be set together.") \
+        if options['maas-on-lxc'] ^ !!options['no-maas']
 
       abort("'distro' has to be set with libvirt provider.") \
         if options['distro'] and options['provider'] == 'lxd'
