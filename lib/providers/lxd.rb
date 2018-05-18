@@ -271,8 +271,16 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
       args[:devices] = {}
 
       if options['no-maas']
-        args[:devices] = \
-          (Hashie.symbolize_keys YAML.load_file(options['file'])['devices'])
+        args[:devices] = YAML.load_file(options['file'])['devices']
+
+        # https://docs.maas.io/2.4/en/installconfig-lxd-install
+        for i in 0..7
+          i = i.to_s
+          args[:devices]["loop" + i] = {}
+          args[:devices]["loop" + i]["path"] = "/dev/loop" + i
+          args[:devices]["loop" + i]["type"] = "unix-block"
+        end
+
         # Now, LXD API can handle integer as a value of a map
         args[:devices].each do |k, v|
           v.each do |kk, vv|
@@ -281,6 +289,8 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
             end
           end
         end
+
+        args[:devices] = (Hashie.symbolize_keys args[:devices])
 
       elsif options['ipaddresses']
         options[:ifaces].each_with_index do |iface,index|
@@ -414,6 +424,7 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
       # Adding configurations that are necessary for shipping MAAS on lxc
       if options['no-maas'] and options['maas-on-lxc']
         container.config = container.config.to_hash
+        # https://docs.maas.io/2.4/en/installconfig-lxd-install
         container.config[:"raw.lxc"] = "\
 lxc.cgroup.devices.allow = c 10:237 rwm\n\
 lxc.aa_profile = unconfined\n\

@@ -77,22 +77,16 @@ module Gogetit
     def create(name)
       abort("'vlans' and 'ipaddresses' can not be set together.") \
         if options['vlans'] and options['ipaddresses']
-
       abort("'chef' and 'zero' can not be set together.") \
         if options['chef'] and options['zero']
-
       abort("when 'no-maas', the network configuration have to be set by 'file'.") \
         if options['no-maas'] and (options['vlans'] or options['ipaddresses'])
-
       abort("'no-maas' and 'file' have to be set together.") \
         if options['no-maas'] ^ !!options['file']
-
-      abort("'maas-on-lxc' and 'no-maas' have to be set together.") \
-        if options['maas-on-lxc'] ^ !!options['no-maas']
-
+      abort("'maas-on-lxc' has to be set with 'no-maas'.") \
+        if options['maas-on-lxc'] and !options['no-maas']
       abort("'distro' has to be set with libvirt provider.") \
         if options['distro'] and options['provider'] == 'lxd'
-
       abort("'alias' has to be set with lxd provider.") \
         if options['alias'] and options['provider'] == 'libvirt'
 
