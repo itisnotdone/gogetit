@@ -72,6 +72,8 @@ module Gogetit
     method_option :"maas-on-lxc", :type => :boolean, \
       :desc => 'To install MAAS on a LXC enabling necessary user config'\
       '(only for LXD provider with no-maas enabled)'
+    method_option :"lxd-in-lxd", :type => :boolean, \
+      :desc => 'To run LXD inside of LXD enabling "security.nesting"'
     method_option :"file", :aliases => '-f', :type => :string, \
       :desc => 'File location(only for LXD provider)'
     def create(name)

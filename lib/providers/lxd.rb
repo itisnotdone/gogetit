@@ -76,6 +76,10 @@ module Gogetit
         args[:config][:"user.user-data"]['maas'] = true
       end
 
+      if options['lxd-in-lxd']
+        args[:config][:"security.nesting"] = "true"
+      end
+
       args[:config][:"user.user-data"]['gogetit'] = true
 
       # To disable to update apt database on first boot
@@ -93,6 +97,12 @@ module Gogetit
 
     def generate_cloud_init_config(options, config, args)
       logger.info("Calling <#{__method__.to_s}>")
+
+      # apt
+      args[:config][:'user.user-data']['apt'] = {}
+      # preserve source list for a while
+      args[:config][:'user.user-data']['apt']['preserve_sources_list'] = true
+
       if options['no-maas']
         # When there is no MAAS, containers should be able to resolve
         # their name with hosts file.
