@@ -70,6 +70,9 @@ gogetit create kvm01 -p libvirt -d centos
 gogetit deploy kvm01
 gogetit deploy kvm01 -d centos
 
+# to enable 'Nested LXD'
+gogetit create lxd01 --lxd-in-lxd
+
 # to create a LXD container without MAAS awareness
 gogetit create lxd01 --no-maas -f lxd_without_maas.yml
 gogetit create lxd01 --no-maas -f lxd_without_maas_vlans.yml
