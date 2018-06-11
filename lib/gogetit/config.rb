@@ -60,7 +60,9 @@ module Gogetit
       logger.info('Copying GoGetIt default configuration..')
       FileUtils.cp(src, dst)
       abort(
-        'Please define default configuration for GoGetIt at ~/.gogetit/gogetit.yml.'
+%q{Please define default configuration for GoGetIt at ~/.gogetit/gogetit.yml.
+Or you can run this command below on the previous workstation to copy existing configurations.
+scp -r ~/.gogetit ubuntu@#{`hostname -f`.chop!}:~/}
       )
     end
     config.merge!(Hashie.symbolize_keys YAML.load_file(conf_file))
