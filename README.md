@@ -79,6 +79,7 @@ gogetit create lxd01 --no-maas -f lxd_without_maas_vlans.yml
 
 # to install MAAS on a lxc container using 'no-maas' option
 gogetit create lxd01 --no-maas -f lxd_without_maas_vlans.yml --maas-on-lxc
+# --maas-on-lxc can be used alone
 
 gogetit destroy lxd01
 
