@@ -49,8 +49,10 @@ module Gogetit
     # logger.datetime_format = "%Y-%m-%d %H:%M:%S"
     logger.progname = 'GoGetIt'
 
-    lib_dir = Gem::Specification.find_by_name('gogetit').gem_dir + '/lib'
+    # print version info to make ease of debugging
+    logger.info("Starting Gogetit v#{Gogetit::VERSION}")
 
+    lib_dir = Gem::Specification.find_by_name('gogetit').gem_dir + '/lib'
     config[:lib_dir] = lib_dir
     # Load GoGetIt default configuration
     conf_file = user_gogetit_home + '/gogetit.yml'
