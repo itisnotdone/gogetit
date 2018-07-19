@@ -192,54 +192,20 @@ module Gogetit
 
       logger.info("Calling to deploy...")
 
-      if options[:distro].nil? or options[:distro].empty?
-        distro = 'bionic'
-      else
-        distro = options[:distro]
-      end
-
-      maas.conn.request(:post, ['machines', system_id], \
-                        {'op' => 'deploy', 'distro_series' => distro})
-      maas.wait_until_state(system_id, 'Deployed')
-
-      fqdn = name + '.' + maas.get_domain
-      distro_name = maas.get_distro_name(system_id)
-      wait_until_available(fqdn, distro_name)
-
-      # To enable serial console to use 'virsh console'
-      if distro_name == 'ubuntu'
-        commands = [
-          'sudo systemctl enable serial-getty@ttyS0.service',
-          'sudo systemctl start serial-getty@ttyS0.service'
-        ]
-        run_through_ssh(fqdn, distro_name, commands)
-      end
-
-      logger.info("#{domain[:name]} has been created.")
-      puts "ssh #{distro_name}@#{name}"
-
-      domain[:default_user] = distro_name
-
-      { result: true, info: domain }
+      deploy(name, options)
     end
 
     def destroy(name)
       logger.info("Calling <#{__method__.to_s}>")
 
-      system_id = maas.get_system_id(name)
-
-      info = {}
-      info[:machine] = \
-        maas.conn.request(:get, ['machines', system_id])
-
-      if maas.machine_exists?(name)
-        if maas.get_machine_state(system_id) == 'Deployed'
-          logger.info("Calling to release...")
-          maas.conn.request(:post, ['machines', system_id], {'op' => 'release'})
-          maas.wait_until_state(system_id, 'Ready')
-        end
-        maas.conn.request(:delete, ['machines', system_id])
-      end
+      info = release(name)[:info]
+      maas.conn.request(
+        :delete,
+        [
+          'machines',
+          info[:machine]['system_id']
+        ]
+      )
 
       pools = []
       conn.list_storage_pools.each do |name|
@@ -313,18 +279,20 @@ module Gogetit
     def release(name)
       logger.info("Calling <#{__method__.to_s}>")
 
+      abort("Machine #{name} does not exist."\
+      " Please check both on MAAS and libvirt.") \
+        if not maas.machine_exists?(name)
+
       system_id = maas.get_system_id(name)
 
       info = {}
       info[:machine] = \
         maas.conn.request(:get, ['machines', system_id])
 
-      if maas.machine_exists?(name)
-        if maas.get_machine_state(system_id) == 'Deployed'
-          logger.info("Calling to release...")
-          maas.conn.request(:post, ['machines', system_id], {'op' => 'release'})
-          maas.wait_until_state(system_id, 'Ready')
-        end
+      if maas.get_machine_state(system_id) == 'Deployed'
+        logger.info("Calling to release...")
+        maas.conn.request(:post, ['machines', system_id], {'op' => 'release'})
+        maas.wait_until_state(system_id, 'Ready')
       end
 
       logger.info("#{name} has been released.")
