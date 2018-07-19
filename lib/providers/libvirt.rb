@@ -192,11 +192,10 @@ module Gogetit
 
       logger.info("Calling to deploy...")
 
-      distro = nil
-      if options['distro'].nil? or options['distro'].empty?
-        distro = 'xenial'
+      if options[:distro].nil? or options[:distro].empty?
+        distro = 'bionic'
       else
-        distro = options['distro']
+        distro = options[:distro]
       end
 
       maas.conn.request(:post, ['machines', system_id], \
@@ -278,11 +277,10 @@ module Gogetit
 
       logger.info("Calling to deploy...")
 
-      distro = nil
-      if options['distro'].nil? or options['distro'].empty?
-        distro = 'xenial'
+      if options[:distro].nil? or options[:distro].empty?
+        distro = 'bionic'
       else
-        distro = options['distro']
+        distro = options[:distro]
       end
 
       maas.conn.request(:post, ['machines', system_id], \
