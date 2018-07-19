@@ -3,6 +3,7 @@ require 'securerandom'
 require 'oga'
 require 'rexml/document'
 require 'gogetit/util'
+require 'yaml'
 
 module Gogetit
   class GogetLibvirt
@@ -249,8 +250,22 @@ module Gogetit
         distro = options[:distro]
       end
 
-      maas.conn.request(:post, ['machines', system_id], \
-                        {'op' => 'deploy', 'distro_series' => distro})
+      require 'base64'
+      user_data = Base64.encode64(
+        "#cloud-config\n" +
+        YAML.dump(generate_cloud_init_config(options, config))[4..-1]
+      )
+
+      maas.conn.request(
+        :post,
+        ['machines', system_id],
+        {
+          'op' => 'deploy',
+          'distro_series' => distro,
+          'user_data' => user_data
+        }
+      )
+
       maas.wait_until_state(system_id, 'Deployed')
 
       fqdn = name + '.' + maas.get_domain

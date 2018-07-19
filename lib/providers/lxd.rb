@@ -46,157 +46,76 @@ module Gogetit
     end
 
     # to generate 'user.user-data'
-    def generate_user_data(args, options)
+    def generate_user_data(lxd_params, options)
       logger.info("Calling <#{__method__.to_s}>")
 
-      args[:config] = {}
+      lxd_params[:config] = {}
 
       if options['no-maas']
-        args[:config][:"user.user-data"] = {}
+        lxd_params[:config][:"user.user-data"] = {}
       else
         sshkeys = maas.get_sshkeys
         pkg_repos = maas.get_package_repos
 
-        args[:config][:'user.user-data'] = { 'ssh_authorized_keys' => [] }
+        lxd_params[:config][:'user.user-data'] = { 'ssh_authorized_keys' => [] }
 
         sshkeys.each do |key|
-          args[:config][:'user.user-data']['ssh_authorized_keys'].push(key['key'])
+          lxd_params[:config][:'user.user-data']['ssh_authorized_keys'].push(key['key'])
         end
 
         pkg_repos.each do |repo|
           if repo['name'] == 'main_archive'
-            args[:config][:'user.user-data']['apt_mirror'] = repo['url']
+            lxd_params[:config][:'user.user-data']['apt_mirror'] = repo['url']
           end
         end
 
-        args[:config][:"user.user-data"]['source_image_alias'] = args[:alias]
-        args[:config][:"user.user-data"]['maas'] = true
+        lxd_params[:config][:"user.user-data"]['source_image_alias'] = lxd_params[:alias]
+        lxd_params[:config][:"user.user-data"]['maas'] = true
       end
 
       if options['maas-on-lxc']
-        args[:config][:"security.privileged"] = "true"
+        lxd_params[:config][:"security.privileged"] = "true"
       end
 
       if options['lxd-in-lxd']
-        args[:config][:"security.nesting"] = "true"
+        lxd_params[:config][:"security.nesting"] = "true"
       end
 
-      args[:config][:"user.user-data"]['gogetit'] = true
+      lxd_params[:config][:"user.user-data"]['gogetit'] = true
 
       # To disable to update apt database on first boot
       # so chef client can keep doing its job.
-      args[:config][:'user.user-data']['package_update'] = false
-      args[:config][:'user.user-data']['package_upgrade'] = false
+      lxd_params[:config][:'user.user-data']['package_update'] = false
+      lxd_params[:config][:'user.user-data']['package_upgrade'] = false
 
-      generate_cloud_init_config(options, config, args)
+      lxd_params[:config][:'user.user-data'] = generate_cloud_init_config(
+        options,
+        config,
+        lxd_params[:config][:'user.user-data']
+      )
 
-      args[:config][:"user.user-data"] = \
-        "#cloud-config\n" + YAML.dump(args[:config][:"user.user-data"])[4..-1]
+      lxd_params[:config][:"user.user-data"] = \
+        "#cloud-config\n" + YAML.dump(lxd_params[:config][:"user.user-data"])[4..-1]
 
-      return args
+      return lxd_params
     end
 
-    def generate_cloud_init_config(options, config, args)
-      logger.info("Calling <#{__method__.to_s}>")
-
-      # apt
-      args[:config][:'user.user-data']['apt'] = {}
-      # preserve source list for a while
-      args[:config][:'user.user-data']['apt']['preserve_sources_list'] = true
-
-      if options['no-maas']
-        # When there is no MAAS, containers should be able to resolve
-        # their name with hosts file.
-        args[:config][:'user.user-data']['manage_etc_hosts'] = true
-      end
-
-      # To add truested root CA certificates
-      # https://cloudinit.readthedocs.io/en/latest/topics/examples.html
-      # #configure-an-instances-trusted-ca-certificates
-      #
-      if config[:cloud_init] && config[:cloud_init][:ca_certs]
-        args[:config][:'user.user-data']['ca-certs'] = {}
-        certs = []
-
-        config[:cloud_init][:ca_certs].each do |ca|
-          content = get_http_content(ca)
-          certs.push(
-            /^-----BEGIN CERTIFICATE-----.*-/m.match(content).to_s
-          ) if content
-        end
-
-        args[:config][:'user.user-data']['ca-certs'] = { 'trusted' => certs }
-      end
-
-      # To get CA public key to be used for SSH authentication
-      # https://cloudinit.readthedocs.io/en/latest/topics/examples.html
-      # #writing-out-arbitrary-files
-      if config[:cloud_init] && config[:cloud_init][:ssh_ca_public_key]
-        args[:config][:'user.user-data']['write_files'] = []
-        content = get_http_content(config[:cloud_init][:ssh_ca_public_key][:key_url])
-        if content
-          file = {
-            'content'     => content.chop!,
-            'path'        => config[:cloud_init][:ssh_ca_public_key][:key_path],
-            'owner'       => config[:cloud_init][:ssh_ca_public_key][:owner],
-            'permissions' => config[:cloud_init][:ssh_ca_public_key][:permissions]
-          }
-          args[:config][:'user.user-data']['write_files'].push(file)
-          args[:config][:'user.user-data']['bootcmd'] = []
-          args[:config][:'user.user-data']['bootcmd'].push(
-            "cloud-init-per once ssh-ca-pub-key \
-echo \"TrustedUserCAKeys #{file['path']}\" >> /etc/ssh/sshd_config"
-          )
-        end
-
-        if config[:cloud_init][:ssh_ca_public_key][:revocation_url]
-          content = get_http_content(config[:cloud_init][:ssh_ca_public_key][:revocation_url])
-          if content
-            args[:config][:'user.user-data']['bootcmd'].push(
-              "cloud-init-per once download-key-revocation-list \
-curl -o #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]} \
-#{config[:cloud_init][:ssh_ca_public_key][:revocation_url]}"
-            )
-            args[:config][:'user.user-data']['bootcmd'].push(
-              "cloud-init-per once ssh-user-key-revocation-list \
-echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\" \
->> /etc/ssh/sshd_config"
-            )
-          end
-        end
-      end
-
-      # To add users
-      # https://cloudinit.readthedocs.io/en/latest/topics/examples.html
-      # #including-users-and-groups
-      if config[:cloud_init] && config[:cloud_init][:users]
-        args[:config][:'user.user-data']['users'] = []
-        args[:config][:'user.user-data']['users'].push('default')
-
-        config[:cloud_init][:users].each do |user|
-          args[:config][:'user.user-data']['users'].push(Hashie.stringify_keys user)
-        end
-      end
-
-      return args
-    end
-
-    def generate_network_config(args, options)
+    def generate_network_config(lxd_params, options)
       logger.info("Calling <#{__method__.to_s}>")
 
       if options['no-maas']
-        args[:config][:'user.network-config'] = \
+        lxd_params[:config][:'user.network-config'] = \
           YAML.load_file(options['file'])['network']
 
         # physical device will be the gate device
-        args[:config][:"user.network-config"]['config'].each do |iface|
+        lxd_params[:config][:"user.network-config"]['config'].each do |iface|
           if iface['type'] == "physical"
             options['ip_to_access'] = iface['subnets'][0]['address'].split('/')[0]
           end
         end
 
-        args[:config][:"user.network-config"] = \
-          YAML.dump(args[:config][:"user.network-config"])[4..-1]
+        lxd_params[:config][:"user.network-config"] = \
+          YAML.dump(lxd_params[:config][:"user.network-config"])[4..-1]
 
       elsif options['ipaddresses']
         options[:ifaces] = check_ip_available(options['ipaddresses'], maas)
@@ -205,7 +124,7 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
         abort("There is no gateway specified for the gateway network.") \
           unless options[:ifaces][0]['gateway_ip']
 
-        args[:config][:'user.network-config'] = {
+        lxd_params[:config][:'user.network-config'] = {
           'version' => 1,
           'config' => [
             {
@@ -266,26 +185,26 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
             end
           end
 
-          args[:config][:'user.network-config']['config'].push(iface_conf)
+          lxd_params[:config][:'user.network-config']['config'].push(iface_conf)
         end
 
-        args[:config][:"user.network-config"] = \
-          YAML.dump(args[:config][:"user.network-config"])[4..-1]
+        lxd_params[:config][:"user.network-config"] = \
+          YAML.dump(lxd_params[:config][:"user.network-config"])[4..-1]
       end
 
-      return args
+      return lxd_params
     end
 
     # To configure devices
-    def generate_devices(args, options)
+    def generate_devices(lxd_params, options)
       logger.info("Calling <#{__method__.to_s}>")
-      args[:devices] = {}
+      lxd_params[:devices] = {}
 
       if options['no-maas']
-        args[:devices] = YAML.load_file(options['file'])['devices']
+        lxd_params[:devices] = YAML.load_file(options['file'])['devices']
 
         # Now, LXD API can handle integer as a value of a map
-        args[:devices].each do |k, v|
+        lxd_params[:devices].each do |k, v|
           v.each do |kk, vv|
             if vv.is_a? Integer
               v[kk] = vv.to_s
@@ -293,13 +212,13 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
           end
         end
 
-        args[:devices] = (Hashie.symbolize_keys args[:devices])
+        lxd_params[:devices] = (Hashie.symbolize_keys lxd_params[:devices])
 
       elsif options['ipaddresses']
         options[:ifaces].each_with_index do |iface,index|
           if index == 0
             if iface['vlan']['name'] == 'untagged' # or vid == 0
-              args[:devices][:"eth#{index}"] = {
+              lxd_params[:devices][:"eth#{index}"] = {
                 mtu: iface['vlan']['mtu'].to_s,   #This must be string
                 name: "eth#{index}",
                 nictype: 'bridged',
@@ -307,7 +226,7 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
                 type: 'nic'
               }
             elsif iface['vlan']['name'] != 'untagged' # or vid != 0
-              args[:devices][:"eth#{index}"] = {
+              lxd_params[:devices][:"eth#{index}"] = {
                 mtu: iface['vlan']['mtu'].to_s,   #This must be string
                 name: "eth#{index}",
                 nictype: 'bridged',
@@ -319,7 +238,7 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
           # it does not need to generate more devices 
           # since it will configure the IPs with tagged VLANs.
           elsif options[:ifaces][0]['vlan']['name'] != 'untagged'
-            args[:devices][:"eth#{index}"] = {
+            lxd_params[:devices][:"eth#{index}"] = {
               mtu: iface['vlan']['mtu'].to_s,   #This must be string
               name: "eth#{index}",
               nictype: 'bridged',
@@ -346,8 +265,8 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
           end
         end
 
-        args[:devices] = {}
-        args[:devices][:"eth0"] = {
+        lxd_params[:devices] = {}
+        lxd_params[:devices][:"eth0"] = {
           mtu: root_bridge_mtu.to_s,   #This must be string
           name: 'eth0',
           nictype: 'bridged',
@@ -360,13 +279,13 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
         # https://docs.maas.io/2.4/en/installconfig-lxd-install
         for i in 0..7
           i = i.to_s
-          args[:devices]["loop" + i] = {}
-          args[:devices]["loop" + i]["path"] = "/dev/loop" + i
-          args[:devices]["loop" + i]["type"] = "unix-block"
+          lxd_params[:devices]["loop" + i] = {}
+          lxd_params[:devices]["loop" + i]["path"] = "/dev/loop" + i
+          lxd_params[:devices]["loop" + i]["type"] = "unix-block"
         end
       end
 
-      return args
+      return lxd_params
     end
 
     def reserve_ips(name, options, container)
@@ -417,24 +336,24 @@ echo \"RevokedKeys #{config[:cloud_init][:ssh_ca_public_key][:revocation_path]}\
       abort("Domain #{name}.#{maas.get_domain} already exists!") \
         if maas.domain_name_exists?(name) unless options['no-maas']
 
-      args = {}
+      lxd_params = {}
 
       if options['alias'].nil? or options['alias'].empty?
-        args[:alias] = config[:lxd][:default_alias]
+        lxd_params[:alias] = config[:lxd][:default_alias]
       else
-        args[:alias] = options['alias']
+        lxd_params[:alias] = options['alias']
       end
 
-      args = generate_user_data(args, options)
-      args = generate_network_config(args, options)
-      args = generate_devices(args, options)
+      lxd_params = generate_user_data(lxd_params, options)
+      lxd_params = generate_network_config(lxd_params, options)
+      lxd_params = generate_devices(lxd_params, options)
 
-      args[:sync] ||= true
+      lxd_params[:sync] ||= true
 
-      conn.create_container(name, args)
+      conn.create_container(name, lxd_params)
       container = conn.container(name)
 
-      container.devices = args[:devices].merge!(container.devices.to_hash)
+      container.devices = lxd_params[:devices].merge!(container.devices.to_hash)
 
       # https://github.com/jeffshantz/hyperkit/blob/master/lib/hyperkit/client/containers.rb#L240
       # Adding configurations that are necessary for shipping MAAS on lxc
@@ -471,7 +390,7 @@ lxc.cgroup.devices.allow = b 7:* rwm"
         default_user = config[:default][:user]
       end
 
-      args[:default_user] = default_user
+      lxd_params[:default_user] = default_user
 
       wait_until_available(ip_or_fqdn, default_user)
       logger.info("#{name} has been created.")
@@ -482,19 +401,19 @@ lxc.cgroup.devices.allow = b 7:* rwm"
         puts "ssh #{default_user}@#{name}"
       end
 
-      { result: true, info: args }
+      { result: true, info: lxd_params }
     end
 
-    def destroy(name, args = {})
+    def destroy(name, lxd_params = {})
       logger.info("Calling <#{__method__.to_s}>")
 
       container = conn.container(name)
-      args[:sync] ||= true
+      lxd_params[:sync] ||= true
 
       info = container.to_hash
 
       if get_state(name) == 'Running'
-        conn.stop_container(name, args)
+        conn.stop_container(name, lxd_params)
       end
 
       wait_until_state(name, 'Stopped')
@@ -524,7 +443,7 @@ lxc.cgroup.devices.allow = b 7:* rwm"
         maas.delete_dns_record(name)
       end
 
-      conn.delete_container(name, args)
+      conn.delete_container(name, lxd_params)
 
       # When multiple static IPs were reserved, it will not delete anything
       # since they are deleted when releasing the IPs above.
