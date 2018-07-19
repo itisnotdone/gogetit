@@ -4,6 +4,7 @@ require 'oga'
 require 'rexml/document'
 require 'gogetit/util'
 require 'yaml'
+require 'base64'
 
 module Gogetit
   class GogetLibvirt
@@ -250,7 +251,6 @@ module Gogetit
         distro = options[:distro]
       end
 
-      require 'base64'
       user_data = Base64.encode64(
         "#cloud-config\n" +
         YAML.dump(generate_cloud_init_config(options, config))[4..-1]
