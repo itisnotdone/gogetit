@@ -5,6 +5,7 @@ require 'rexml/document'
 require 'gogetit/util'
 require 'yaml'
 require 'base64'
+require 'hashie'
 
 module Gogetit
   class GogetLibvirt
@@ -162,11 +163,11 @@ module Gogetit
       domain = config[:libvirt][:specs][:default]
       ifaces = nil
 
-      if options['ipaddresses']
-        ifaces = check_ip_available(options['ipaddresses'], maas)
+      if options[:ipaddresses]
+        ifaces = check_ip_available(options[:ipaddresses], maas)
         domain = generate_nics(ifaces, domain)
-      elsif options['vlans']
-        #check_vlan_available(options['vlans'])
+      elsif options[:vlans]
+        #check_vlan_available(options[:vlans])
       else
         domain[:nic] = [
           {
@@ -185,10 +186,10 @@ module Gogetit
       system_id = maas.get_system_id(domain[:name])
       maas.wait_until_state(system_id, 'Ready')
 
-      if options['ipaddresses']
+      if options[:ipaddresses]
         configure_interfaces(ifaces, system_id)
-      elsif options['vlans']
-        #check_vlan_available(options['vlans'])
+      elsif options[:vlans]
+        #check_vlan_available(options[:vlans])
       else
       end
 
@@ -253,7 +254,9 @@ module Gogetit
 
       user_data = Base64.encode64(
         "#cloud-config\n" +
-        YAML.dump(generate_cloud_init_config(options, config))[4..-1]
+        YAML.dump(
+          generate_cloud_init_config(options, config)
+        )[4..-1]
       )
 
       maas.conn.request(

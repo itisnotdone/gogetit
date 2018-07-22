@@ -51,7 +51,7 @@ module Gogetit
 
       lxd_params[:config] = {}
 
-      if options['no-maas']
+      if options[:'no-maas']
         lxd_params[:config][:"user.user-data"] = {}
       else
         sshkeys = maas.get_sshkeys
@@ -73,11 +73,11 @@ module Gogetit
         lxd_params[:config][:"user.user-data"]['maas'] = true
       end
 
-      if options['maas-on-lxc']
+      if options[:'maas-on-lxc']
         lxd_params[:config][:"security.privileged"] = "true"
       end
 
-      if options['lxd-in-lxd']
+      if options[:'lxd-in-lxd']
         lxd_params[:config][:"security.nesting"] = "true"
       end
 
@@ -103,22 +103,22 @@ module Gogetit
     def generate_network_config(lxd_params, options)
       logger.info("Calling <#{__method__.to_s}>")
 
-      if options['no-maas']
+      if options[:'no-maas']
         lxd_params[:config][:'user.network-config'] = \
-          YAML.load_file(options['file'])['network']
+          YAML.load_file(options[:file])['network']
 
         # physical device will be the gate device
         lxd_params[:config][:"user.network-config"]['config'].each do |iface|
           if iface['type'] == "physical"
-            options['ip_to_access'] = iface['subnets'][0]['address'].split('/')[0]
+            options[:ip_to_access] = iface['subnets'][0]['address'].split('/')[0]
           end
         end
 
         lxd_params[:config][:"user.network-config"] = \
           YAML.dump(lxd_params[:config][:"user.network-config"])[4..-1]
 
-      elsif options['ipaddresses']
-        options[:ifaces] = check_ip_available(options['ipaddresses'], maas)
+      elsif options[:ipaddresses]
+        options[:ifaces] = check_ip_available(options[:ipaddresses], maas)
         abort("There is no dns server specified for the gateway network.") \
           unless options[:ifaces][0]['dns_servers'][0]
         abort("There is no gateway specified for the gateway network.") \
@@ -200,8 +200,8 @@ module Gogetit
       logger.info("Calling <#{__method__.to_s}>")
       lxd_params[:devices] = {}
 
-      if options['no-maas']
-        lxd_params[:devices] = YAML.load_file(options['file'])['devices']
+      if options[:'no-maas']
+        lxd_params[:devices] = YAML.load_file(options[:file])['devices']
 
         # Now, LXD API can handle integer as a value of a map
         lxd_params[:devices].each do |k, v|
@@ -214,7 +214,7 @@ module Gogetit
 
         lxd_params[:devices] = (Hashie.symbolize_keys lxd_params[:devices])
 
-      elsif options['ipaddresses']
+      elsif options[:ipaddresses]
         options[:ifaces].each_with_index do |iface,index|
           if index == 0
             if iface['vlan']['name'] == 'untagged' # or vid == 0
@@ -275,7 +275,7 @@ module Gogetit
         }
       end
 
-      if options['maas-on-lxc']
+      if options[:'maas-on-lxc']
         # https://docs.maas.io/2.4/en/installconfig-lxd-install
         for i in 0..7
           i = i.to_s
@@ -327,21 +327,18 @@ module Gogetit
     def create(name, options = {})
       logger.info("Calling <#{__method__.to_s}>")
 
-      # options from the kitchen driver have keys as symbol
-      Hashie.stringify_keys! options
-
       abort("Container #{name} already exists!") \
         if container_exists?(name)
 
       abort("Domain #{name}.#{maas.get_domain} already exists!") \
-        if maas.domain_name_exists?(name) unless options['no-maas']
+        if maas.domain_name_exists?(name) unless options[:'no-maas']
 
       lxd_params = {}
 
-      if options['alias'].nil? or options['alias'].empty?
+      if options[:alias].nil? or options[:alias].empty?
         lxd_params[:alias] = config[:lxd][:default_alias]
       else
-        lxd_params[:alias] = options['alias']
+        lxd_params[:alias] = options[:alias]
       end
 
       lxd_params = generate_user_data(lxd_params, options)
@@ -357,7 +354,7 @@ module Gogetit
 
       # https://github.com/jeffshantz/hyperkit/blob/master/lib/hyperkit/client/containers.rb#L240
       # Adding configurations that are necessary for shipping MAAS on lxc
-      if options['maas-on-lxc']
+      if options[:'maas-on-lxc']
         container.config = container.config.to_hash
         # https://docs.maas.io/2.4/en/installconfig-lxd-install
         container.config[:"raw.lxc"] = "\
@@ -371,13 +368,13 @@ lxc.cgroup.devices.allow = b 7:* rwm"
       container = conn.container(name)
 
       reserve_ips(name, options, container) \
-        if options['vlans'] or options['ipaddresses'] \
-          unless options['no-maas']
+        if options[:vlans] or options[:ipaddresses] \
+          unless options[:'no-maas']
 
       conn.start_container(name, :sync=>"true")
 
-      if options['no-maas']
-        ip_or_fqdn = options['ip_to_access']
+      if options[:'no-maas']
+        ip_or_fqdn = options[:ip_to_access]
       else
         ip_or_fqdn = name + '.' + maas.get_domain
       end
@@ -395,8 +392,8 @@ lxc.cgroup.devices.allow = b 7:* rwm"
       wait_until_available(ip_or_fqdn, default_user)
       logger.info("#{name} has been created.")
 
-      if options['no-maas']
-        puts "ssh #{default_user}@#{options['ip_to_access']}"
+      if options[:'no-maas']
+        puts "ssh #{default_user}@#{options[:ip_to_access]}"
       else
         puts "ssh #{default_user}@#{name}"
       end

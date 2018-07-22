@@ -78,32 +78,32 @@ module Gogetit
       :desc => 'File location(only for LXD provider)'
     def create(name)
       abort("'vlans' and 'ipaddresses' can not be set together.") \
-        if options['vlans'] and options['ipaddresses']
+        if options[:vlans] and options[:ipaddresses]
       abort("'chef' and 'zero' can not be set together.") \
-        if options['chef'] and options['zero']
+        if options[:chef] and options[:zero]
       abort("when 'no-maas', the network configuration have to be set by 'file'.") \
-        if options['no-maas'] and (options['vlans'] or options['ipaddresses'])
+        if options[:'no-maas'] and (options[:vlans] or options[:ipaddresses])
       abort("'no-maas' and 'file' have to be set together.") \
-        if options['no-maas'] ^ !!options['file']
-      abort("'distro' has to be set with libvirt provider.") \
-        if options['distro'] and options['provider'] == 'lxd'
+        if options[:'no-maas'] ^ !!options[:file]
+      abort("'distro' has to be set only with libvirt provider.") \
+        if options[:distro] and options[:provider] == 'lxd'
       abort("'alias' has to be set with lxd provider.") \
-        if options['alias'] and options['provider'] == 'libvirt'
+        if options[:alias] and options[:provider] == 'libvirt'
 
-      case options['provider']
+      case options[:provider]
       when 'lxd'
-        Gogetit::CLI.result = lxd.create(name, options.to_hash)
+        Gogetit::CLI.result = lxd.create(name, options)
       when 'libvirt'
-        Gogetit::CLI.result = libvirt.create(name, options.to_hash)
+        Gogetit::CLI.result = libvirt.create(name, options)
       else
         abort('Invalid argument entered.')
       end
 
       # post-tasks
-      if options['chef']
+      if options[:chef]
         knife_bootstrap_chef(name, options[:provider], config)
         update_databags(config)
-      elsif options['zero']
+      elsif options[:zero]
         knife_bootstrap_zero(name, options[:provider], config)
       end
     end
@@ -115,7 +115,7 @@ module Gogetit
       :default => false, :desc => 'Chef Zero awareness'
     def destroy(name)
       abort("'chef' and 'zero' can not be set together.") \
-        if options['chef'] and options['zero']
+        if options[:chef] and options[:zero]
 
       provider = get_provider_of(name, providers)
       if provider
@@ -129,10 +129,10 @@ module Gogetit
         end
       end
       # post-tasks
-      if options['chef']
+      if options[:chef]
         knife_remove(name, options)
         update_databags(config)
-      elsif options['zero']
+      elsif options[:zero]
         knife_remove(name, options)
       end
     end
@@ -146,15 +146,15 @@ module Gogetit
       :default => false, :desc => 'Chef Zero awareness'
     def deploy(name)
       abort("'chef' and 'zero' can not be set together.") \
-        if options['chef'] and options['zero']
+        if options[:chef] and options[:zero]
 
-      Gogetit::CLI.result = libvirt.deploy(name, options.to_hash)
+      Gogetit::CLI.result = libvirt.deploy(name, options)
 
       # post-tasks
-      if options['chef']
+      if options[:chef]
         knife_bootstrap(name, options[:provider], config)
         update_databags(config)
-      elsif options['zero']
+      elsif options[:zero]
         knife_bootstrap_zero(name, options[:provider], config)
       end
     end
@@ -167,15 +167,15 @@ module Gogetit
       :default => false, :desc => 'Chef Zero awareness'
     def release(name)
       abort("'chef' and 'zero' can not be set together.") \
-        if options['chef'] and options['zero']
+        if options[:chef] and options[:zero]
 
       Gogetit::CLI.result = libvirt.release(name)
 
       # post-tasks
-      if options['chef']
+      if options[:chef]
         knife_remove(name, options)
         update_databags(config)
-      elsif options['zero']
+      elsif options[:zero]
         knife_remove(name, options)
       end
     end
@@ -188,7 +188,7 @@ module Gogetit
       :default => false, :desc => 'Chef Zero awareness'
     def rebuild(name)
       abort("'chef' and 'zero' can not be set together.") \
-        if options['chef'] and options['zero']
+        if options[:chef] and options[:zero]
 
       provider = get_provider_of(name, providers)
       if provider
@@ -212,7 +212,7 @@ module Gogetit
         end
       end
       # post-tasks
-      if options['chef']
+      if options[:chef]
         knife_remove(name) if options[:chef]
         update_databags(config)
       end

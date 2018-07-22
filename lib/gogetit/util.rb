@@ -104,7 +104,7 @@ module Gogetit
     def knife_remove(name, options)
       logger.info("Calling <#{__method__.to_s}>")
       if find_executable 'knife'
-        if options['chef']
+        if options[:chef]
           if system('knife ssl check')
             logger.info("With chef-server..")
             puts "Deleting node #{name}.."
@@ -116,7 +116,7 @@ module Gogetit
           else
             abort('knife is not configured properly.')
           end
-        elsif options['zero']
+        elsif options[:zero]
           logger.info("With chef-zero..")
           puts "Deleting node #{name}.."
           logger.info("knife node delete -y #{name}")
@@ -270,7 +270,7 @@ module Gogetit
       # preserve source list for a while
       user_data['apt']['preserve_sources_list'] = true
 
-      if options['no-maas']
+      if options[:'no-maas']
         # When there is no MAAS, containers should be able to resolve
         # their name with hosts file.
         user_data['manage_etc_hosts'] = true
