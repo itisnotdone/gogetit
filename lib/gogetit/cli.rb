@@ -55,6 +55,8 @@ module Gogetit
     desc 'create NAME', 'Create either a container or KVM domain.'
     method_option :provider, :aliases => '-p', :type => :string, \
       :default => 'lxd', :desc => 'A provider such as lxd and libvirt'
+    method_option :spec, :aliases => '-s', :type => :string, \
+      :desc => 'A spec specified in gogetit.yml'
     method_option :alias, :aliases => '-a', :type => :string, \
       :desc => 'An alias name for a lxd image'
     method_option :distro, :aliases => '-d', :type => :string, \
@@ -77,18 +79,20 @@ module Gogetit
     method_option :"file", :aliases => '-f', :type => :string, \
       :desc => 'File location(only for LXD provider)'
     def create(name)
-      abort("'vlans' and 'ipaddresses' can not be set together.") \
+      abort(":vlans and :ipaddresses can not be set together.") \
         if options[:vlans] and options[:ipaddresses]
-      abort("'chef' and 'zero' can not be set together.") \
+      abort(":chef and :zero can not be set together.") \
         if options[:chef] and options[:zero]
-      abort("when 'no-maas', the network configuration have to be set by 'file'.") \
+      abort("when :'no-maas', the network configuration have to be set by :file.") \
         if options[:'no-maas'] and (options[:vlans] or options[:ipaddresses])
-      abort("'no-maas' and 'file' have to be set together.") \
+      abort(":'no-maas' and :file have to be set together.") \
         if options[:'no-maas'] ^ !!options[:file]
-      abort("'distro' has to be set only with libvirt provider.") \
+      abort(":distro has to be set only with libvirt provider.") \
         if options[:distro] and options[:provider] == 'lxd'
-      abort("'alias' has to be set with lxd provider.") \
+      abort(":alias has to be set with lxd provider.") \
         if options[:alias] and options[:provider] == 'libvirt'
+      abort(":spec has to be set only with libvirt provider.") \
+        if options[:spec] and options[:provider] == 'lxd'
 
       case options[:provider]
       when 'lxd'
@@ -114,7 +118,7 @@ module Gogetit
     method_option :zero, :aliases => '-z', :type => :boolean, \
       :default => false, :desc => 'Chef Zero awareness'
     def destroy(name)
-      abort("'chef' and 'zero' can not be set together.") \
+      abort(":chef and :zero can not be set together.") \
         if options[:chef] and options[:zero]
 
       provider = get_provider_of(name, providers)
@@ -145,7 +149,7 @@ module Gogetit
     method_option :zero, :aliases => '-z', :type => :boolean, \
       :default => false, :desc => 'Chef Zero awareness'
     def deploy(name)
-      abort("'chef' and 'zero' can not be set together.") \
+      abort(":chef and :zero can not be set together.") \
         if options[:chef] and options[:zero]
 
       Gogetit::CLI.result = libvirt.deploy(name, options)
@@ -166,7 +170,7 @@ module Gogetit
     method_option :zero, :aliases => '-z', :type => :boolean, \
       :default => false, :desc => 'Chef Zero awareness'
     def release(name)
-      abort("'chef' and 'zero' can not be set together.") \
+      abort(":chef and :zero can not be set together.") \
         if options[:chef] and options[:zero]
 
       Gogetit::CLI.result = libvirt.release(name)
@@ -187,7 +191,7 @@ module Gogetit
     method_option :zero, :aliases => '-z', :type => :boolean, \
       :default => false, :desc => 'Chef Zero awareness'
     def rebuild(name)
-      abort("'chef' and 'zero' can not be set together.") \
+      abort(":chef and :zero can not be set together.") \
         if options[:chef] and options[:zero]
 
       provider = get_provider_of(name, providers)

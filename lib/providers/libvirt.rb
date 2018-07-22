@@ -160,7 +160,12 @@ module Gogetit
       " Please check both on MAAS and libvirt.") \
         if maas.domain_name_exists?(name) or domain_exists?(name)
 
-      domain = config[:libvirt][:specs][:default]
+      if options[:spec]
+        domain = config[:libvirt][:specs][:"#{options[:spec]}"]
+      else
+        domain = config[:libvirt][:specs][:default]
+      end
+
       ifaces = nil
 
       if options[:ipaddresses]

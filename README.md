@@ -66,6 +66,9 @@ gogetit create lxd02 -p lxd -a centos7
 # When specifying distro for Libvirt provider
 gogetit create kvm01 -p libvirt -d centos
 
+# When specifying a spec for Libvirt provider
+gogetit create kvm01 -p libvirt -s ceph
+
 # When deploying on an existing machine(only for libvirt provider)
 gogetit deploy kvm01
 gogetit deploy kvm01 -d centos
