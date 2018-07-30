@@ -438,7 +438,7 @@ lxc.cgroup.devices.allow = b 7:* rwm"
         end
 
         maas.delete_dns_record(name)
-      end
+      end if container[:config][:"user.user-data"]
 
       conn.delete_container(name, lxd_params)
 

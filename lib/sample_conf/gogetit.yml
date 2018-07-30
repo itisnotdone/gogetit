@@ -31,14 +31,14 @@ libvirt:
       disk:
        root:
         pool: ssd
-        capacity: 4
+        capacity: 8
     ceph:
       vcpu: 4
       memory: 8
       disk:
        root:
         pool: ssd
-        capacity: 4
+        capacity: 8
        data:
         -
           pool: hdd
