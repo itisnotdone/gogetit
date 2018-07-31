@@ -379,7 +379,7 @@ lxc.cgroup.devices.allow = b 7:* rwm"
         ip_or_fqdn = name + '.' + maas.get_domain
       end
 
-      if config[:default][:user] == config[:cloud_init][:users][0][:name]
+      if config[:default][:user] == config[:cloud_init][:users][0]['name']
           default_user = config[:default][:user]
       else
         if conn.execute_command(name, "ls /etc/lsb-release")[:metadata][:return] == 0
