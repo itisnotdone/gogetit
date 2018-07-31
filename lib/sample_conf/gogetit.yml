@@ -56,6 +56,13 @@ chef:
       lxd: http://chef.example.com/install_chef_script_for_lxd.sh
 
 cloud_init:
+  apt:
+    primary:
+      - arches: [default]
+        uri: http://archive.ubuntu.com/ubuntu/
+    security:
+      - arches: [default]
+        uri: http://archive.ubuntu.com/ubuntu/
   users:
     - name: usera
       gecos: usera
@@ -63,6 +70,10 @@ cloud_init:
       groups: users, admin
       shell: /bin/bash
       lock_passwd: true
+      ssh_authorized_keys:
+        - ssh-rsa blahblahblah usera@desktop
+
+cloud_init_helper:
   ca_certs:
     - http://pki.example.com/site/root_ca.crt
   ssh_ca_public_key:
