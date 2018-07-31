@@ -107,10 +107,11 @@ module Gogetit
         lxd_params[:config][:'user.network-config'] = \
           YAML.load_file(options[:file])['network']
 
+        require 'pry'; binding.pry
         # physical device will be the gate device
         lxd_params[:config][:"user.network-config"]['config'].each do |iface|
-          if iface['type'] == "physical"
-            options[:ip_to_access] = iface['subnets'][0]['address'].split('/')[0]
+          if iface['type'] == 'physical'
+            config[:ip_to_access] = iface['subnets'][0]['address'].split('/')[0]
           end
         end
 
@@ -374,7 +375,7 @@ lxc.cgroup.devices.allow = b 7:* rwm"
       conn.start_container(name, :sync=>"true")
 
       if options[:'no-maas']
-        ip_or_fqdn = options[:ip_to_access]
+        ip_or_fqdn = config[:ip_to_access]
       else
         ip_or_fqdn = name + '.' + maas.get_domain
       end
@@ -393,7 +394,7 @@ lxc.cgroup.devices.allow = b 7:* rwm"
       logger.info("#{name} has been created.")
 
       if options[:'no-maas']
-        puts "ssh #{default_user}@#{options[:ip_to_access]}"
+        puts "ssh #{default_user}@#{config[:ip_to_access]}"
       else
         puts "ssh #{default_user}@#{name}"
       end
