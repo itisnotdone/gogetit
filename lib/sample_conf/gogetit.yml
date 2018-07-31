@@ -63,6 +63,8 @@ cloud_init:
       groups: users, admin
       shell: /bin/bash
       lock_passwd: true
+      ssh_authorized_keys:
+        - ssh-rsa blahblahblah usera@desktop
   ca_certs:
     - http://pki.example.com/site/root_ca.crt
   ssh_ca_public_key:
