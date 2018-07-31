@@ -107,7 +107,6 @@ module Gogetit
         lxd_params[:config][:'user.network-config'] = \
           YAML.load_file(options[:file])['network']
 
-        require 'pry'; binding.pry
         # physical device will be the gate device
         lxd_params[:config][:"user.network-config"]['config'].each do |iface|
           if iface['type'] == 'physical'
@@ -380,12 +379,16 @@ lxc.cgroup.devices.allow = b 7:* rwm"
         ip_or_fqdn = name + '.' + maas.get_domain
       end
 
-      if conn.execute_command(name, "ls /etc/lsb-release")[:metadata][:return] == 0
-        default_user = 'ubuntu'
-      elsif conn.execute_command(name, "ls /etc/redhat-release")[:metadata][:return] == 0
-        default_user = 'centos'
+      if config[:default][:user] == config[:cloud_init][:users][0][:name]
+          default_user = config[:default][:user]
       else
-        default_user = config[:default][:user]
+        if conn.execute_command(name, "ls /etc/lsb-release")[:metadata][:return] == 0
+          default_user = 'ubuntu'
+        elsif conn.execute_command(name, "ls /etc/redhat-release")[:metadata][:return] == 0
+          default_user = 'centos'
+        else
+          default_user = config[:default][:user]
+        end
       end
 
       lxd_params[:default_user] = default_user
