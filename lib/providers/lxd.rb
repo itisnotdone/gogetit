@@ -118,24 +118,24 @@ module Gogetit
           YAML.dump(lxd_params[:config][:"user.network-config"])[4..-1]
 
       elsif options[:ipaddresses]
-        options[:ifaces] = check_ip_available(options[:ipaddresses], maas)
+        config[:ifaces] = check_ip_available(options[:ipaddresses], maas)
         abort("There is no dns server specified for the gateway network.") \
-          unless options[:ifaces][0]['dns_servers'][0]
+          unless config[:ifaces][0]['dns_servers'][0]
         abort("There is no gateway specified for the gateway network.") \
-          unless options[:ifaces][0]['gateway_ip']
+          unless config[:ifaces][0]['gateway_ip']
 
         lxd_params[:config][:'user.network-config'] = {
           'version' => 1,
           'config' => [
             {
               'type' => 'nameserver',
-              'address' => options[:ifaces][0]['dns_servers'][0]
+              'address' => config[:ifaces][0]['dns_servers'][0]
             }
           ]
         }
 
         # to generate configuration for [:config][:'user.network-config']['config']
-        options[:ifaces].each_with_index do |iface,index|
+        config[:ifaces].each_with_index do |iface,index|
           if index == 0
             iface_conf = {
               'type' => 'physical',
@@ -152,7 +152,7 @@ module Gogetit
               ]
             }
           elsif index > 0
-            if options[:ifaces][0]['vlan']['name'] != 'untagged'
+            if config[:ifaces][0]['vlan']['name'] != 'untagged'
               iface_conf = {
                 'type' => 'physical',
                 'name' => "eth#{index}",
@@ -166,7 +166,7 @@ module Gogetit
                   }
                 ]
               }
-            elsif options[:ifaces][0]['vlan']['name'] == 'untagged'
+            elsif config[:ifaces][0]['vlan']['name'] == 'untagged'
               iface_conf = {
                 'type' => 'vlan',
                 'name' => "eth0.#{iface['vlan']['vid'].to_s}",
@@ -215,7 +215,7 @@ module Gogetit
         lxd_params[:devices] = (Hashie.symbolize_keys lxd_params[:devices])
 
       elsif options[:ipaddresses]
-        options[:ifaces].each_with_index do |iface,index|
+        config[:ifaces].each_with_index do |iface,index|
           if index == 0
             if iface['vlan']['name'] == 'untagged' # or vid == 0
               lxd_params[:devices][:"eth#{index}"] = {
@@ -234,10 +234,10 @@ module Gogetit
                 type: 'nic'
               }
             end
-          # When options[:ifaces][0]['vlan']['name'] == 'untagged' and index > 0,
+          # When config[:ifaces][0]['vlan']['name'] == 'untagged' and index > 0,
           # it does not need to generate more devices 
           # since it will configure the IPs with tagged VLANs.
-          elsif options[:ifaces][0]['vlan']['name'] != 'untagged'
+          elsif config[:ifaces][0]['vlan']['name'] != 'untagged'
             lxd_params[:devices][:"eth#{index}"] = {
               mtu: iface['vlan']['mtu'].to_s,   #This must be string
               name: "eth#{index}",
@@ -291,7 +291,7 @@ module Gogetit
     def reserve_ips(name, options, container)
       logger.info("Calling <#{__method__.to_s}>")
       # Generate params to reserve IPs
-      options[:ifaces].each_with_index do |iface,index|
+      config[:ifaces].each_with_index do |iface,index|
         if index == 0
           params = {
             'subnet' => iface['cidr'],
@@ -304,14 +304,14 @@ module Gogetit
           # it fails ocuring '404 not found'.
           # if under score, '_', is used as a conjunction instead of '-',
           # it breaks MAAS DNS somehow..
-          if options[:ifaces][0]['vlan']['name'] == 'untagged'
+          if config[:ifaces][0]['vlan']['name'] == 'untagged'
             params = {
               'subnet' => iface['cidr'],
               'ip' => iface['ip'],
               'hostname' => 'eth0' + '-' + iface['vlan']['vid'].to_s  + '-' + name,
               'mac' => container[:expanded_config][:"volatile.eth0.hwaddr"]
             }
-          elsif options[:ifaces][0]['vlan']['name'] != 'untagged'
+          elsif config[:ifaces][0]['vlan']['name'] != 'untagged'
             params = {
               'subnet' => iface['cidr'],
               'ip' => iface['ip'],
