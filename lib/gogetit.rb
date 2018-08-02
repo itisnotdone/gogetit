@@ -49,7 +49,15 @@ module Gogetit
 
     # for Libvirt(KVM), machines in pods controlled by MAAS
     conn = maas.conn
-    machines = conn.request(:get, ['machines'])
+    begin
+      machines = conn.request(:get, ['machines'])
+    rescue StandardError => e
+      puts e
+      abort(
+        "This method depends on MAAS with maas-client.\n"\
+        "Please check if MAAS or maas-client is configured properly."
+      )
+    end
     config[:libvirt][:nodes].each do |node|
       puts "Listing KVM instances on #{node[:url]}..."
       machines.each do |machine|
