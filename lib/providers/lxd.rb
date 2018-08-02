@@ -129,7 +129,8 @@ module Gogetit
           'config' => [
             {
               'type' => 'nameserver',
-              'address' => config[:ifaces][0]['dns_servers'][0]
+              'address' => config[:ifaces][0]['dns_servers'][0],
+              'search' => maas.get_domain,
             }
           ]
         }
