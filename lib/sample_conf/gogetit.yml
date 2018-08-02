@@ -75,7 +75,7 @@ cloud_init:
 
 cloud_init_helper:
   ca_certs:
-    - http://pki.example.com/site/root_ca.crt
+    - http://pki.example.com/site/ca-bundle.crt
   ssh_ca_public_key:
     key_url: http://pki.example.com/site/ssh_ca.pub
     key_path: /etc/ssh/ca.pub
