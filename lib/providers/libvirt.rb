@@ -277,8 +277,16 @@ module Gogetit
       maas.wait_until_state(system_id, 'Deployed')
 
       fqdn = name + '.' + maas.get_domain
+
       distro_name = maas.get_distro_name(system_id)
-      wait_until_available(fqdn, distro_name)
+
+      if config[:default][:user] == config[:cloud_init][:users][0]['name']
+        default_user = config[:default][:user]
+      else
+        default_user = distro_name
+      end
+
+      wait_until_available(fqdn, default_user)
 
       # To enable serial console to use 'virsh console'
       if distro_name == 'ubuntu'
@@ -286,15 +294,15 @@ module Gogetit
           'sudo systemctl enable serial-getty@ttyS0.service',
           'sudo systemctl start serial-getty@ttyS0.service'
         ]
-        run_through_ssh(fqdn, distro_name, commands)
+        run_through_ssh(fqdn, default_user, commands)
       end
 
       logger.info("#{name} has been created.")
-      puts "ssh #{distro_name}@#{name}"
+      puts "ssh #{default_user}@#{name}"
 
       info = {}
-      info[:distro] = distro
-      info[:default_user] = distro_name
+      info[:distro] = distro_name
+      info[:default_user] = default_user
 
       { result: true, info: info }
     end
