@@ -292,15 +292,15 @@ module Gogetit
       # To get CA public key to be used for SSH authentication
       # https://cloudinit.readthedocs.io/en/latest/topics/examples.html
       # #writing-out-arbitrary-files
-      if config[:cloud_init_helper] && config[:cloud_init_helper][:ssh_ca_public_key]
+      if config[:cloud_init_helper] && config[:cloud_init_helper][:ssh_with_ca_signed_keys]
         user_data['write_files'] = []
-        content = get_http_content(config[:cloud_init_helper][:ssh_ca_public_key][:key_url])
+        content = get_http_content(config[:cloud_init_helper][:ssh_with_ca_signed_keys][:ca_public_key_url])
         if content
           file = {
             'content'     => content.chop!,
-            'path'        => config[:cloud_init_helper][:ssh_ca_public_key][:key_path],
-            'owner'       => config[:cloud_init_helper][:ssh_ca_public_key][:owner],
-            'permissions' => config[:cloud_init_helper][:ssh_ca_public_key][:permissions]
+            'path'        => config[:cloud_init_helper][:ssh_with_ca_signed_keys][:ca_public_key_path],
+            'owner'       => config[:cloud_init_helper][:ssh_with_ca_signed_keys][:owner],
+            'permissions' => config[:cloud_init_helper][:ssh_with_ca_signed_keys][:permissions]
           }
           user_data['write_files'].push(file)
           user_data['bootcmd'] = []
@@ -310,17 +310,17 @@ echo \"TrustedUserCAKeys #{file['path']}\" >> /etc/ssh/sshd_config"
           )
         end
 
-        if config[:cloud_init_helper][:ssh_ca_public_key][:revocation_url]
-          content = get_http_content(config[:cloud_init_helper][:ssh_ca_public_key][:revocation_url])
+        if config[:cloud_init_helper][:ssh_with_ca_signed_keys][:revocation_url]
+          content = get_http_content(config[:cloud_init_helper][:ssh_with_ca_signed_keys][:revocation_url])
           if content
             user_data['bootcmd'].push(
               "cloud-init-per once download-key-revocation-list \
-curl -o #{config[:cloud_init_helper][:ssh_ca_public_key][:revocation_path]} \
-#{config[:cloud_init_helper][:ssh_ca_public_key][:revocation_url]}"
+curl -o #{config[:cloud_init_helper][:ssh_with_ca_signed_keys][:revocation_path]} \
+#{config[:cloud_init_helper][:ssh_with_ca_signed_keys][:revocation_url]}"
             )
             user_data['bootcmd'].push(
               "cloud-init-per once ssh-user-key-revocation-list \
-echo \"RevokedKeys #{config[:cloud_init_helper][:ssh_ca_public_key][:revocation_path]}\" \
+echo \"RevokedKeys #{config[:cloud_init_helper][:ssh_with_ca_signed_keys][:revocation_path]}\" \
 >> /etc/ssh/sshd_config"
             )
           end

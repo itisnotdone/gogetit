@@ -76,10 +76,10 @@ cloud_init:
 cloud_init_helper:
   ca_certs:
     - http://pki.example.com/site/ca-bundle.crt
-  ssh_ca_public_key:
-    key_url: http://pki.example.com/site/ssh_ca.pub
-    key_path: /etc/ssh/ca.pub
+  ssh_with_ca_signed_keys:
+    ca_public_key_url: http://pki.example.com/site/ssh_ca.pub
+    ca_public_key_path: /etc/ssh/ssh_ca.pub
     revocation_url: http://pki.example.com/site/ssh-revoked-keys
-    revocation_path: /etc/ssh/ca.pub
+    revocation_path: /etc/ssh/ssh-revoked-keys
     owner: root:root
     permissions: '0640'
