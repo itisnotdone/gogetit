@@ -1,5 +1,5 @@
 # Gogetit
-*If you want something, go get it. Period.*
+**If you want something, go get it. Period.**
 
 Libraries with a CLI tool for dealing with things such as [MAAS](https://docs.ubuntu.com/maas/2.2/en/), [LXD](https://github.com/lxc/lxd/tree/master/doc), Libvirt and Chef.
 By using this, you will get to use them all together in automated and efficient way.
