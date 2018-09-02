@@ -78,7 +78,13 @@ module Gogetit
       end
 
       if options[:'lxd-in-lxd']
+        lxd_params[:config][:"security.privileged"] = "true"
         lxd_params[:config][:"security.nesting"] = "true"
+      end
+
+      if options[:'kvm-in-lxd']
+        lxd_params[:config][:"security.nesting"] = "true"
+        lxd_params[:config][:"linux.kernel_modules"] = "iptable_nat, ip6table_nat, ebtables, openvswitch, kvm, kvm_intel, tap, vhost, vhost_net, vhost_scsi, vhost_vsock"
       end
 
       lxd_params[:config][:"user.user-data"]['gogetit'] = true

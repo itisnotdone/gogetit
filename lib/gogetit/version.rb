@@ -1,3 +1,3 @@
 module Gogetit
-  VERSION = "0.22.10"
+  VERSION = "0.23.1"
 end
